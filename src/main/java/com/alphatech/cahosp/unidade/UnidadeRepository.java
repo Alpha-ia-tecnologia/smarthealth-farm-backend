@@ -18,6 +18,9 @@ public interface UnidadeRepository extends JpaRepository<Unidade, UUID> {
 
     boolean existsBySiglaIgnoreCase(String sigla);
 
+    /** Total de unidades atendidas (exclui o hub logistico). RF-DASH. */
+    long countByHubFalse();
+
     /**
      * Lista unidades aplicando filtros opcionais (qualquer um pode ser {@code null}).
      * A busca casa, ignore-case, em nome OU sigla OU municipio. RF-DAD-06.

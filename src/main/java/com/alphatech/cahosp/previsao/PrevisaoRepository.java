@@ -39,6 +39,23 @@ public interface PrevisaoRepository extends JpaRepository<Previsao, UUID> {
     @Query("SELECT p FROM Previsao p JOIN FETCH p.medicamento")
     List<Previsao> findTodasComMedicamento();
 
+    /**
+     * Serie agregada (soma por periodo) de um medicamento em todas as unidades — base do grafico
+     * consolidado do dashboard (RF-DASH/RF-PRV-02). Ordenada cronologicamente pela ordem do ponto.
+     */
+    @Query("""
+            SELECT ps.periodo AS periodo,
+                   SUM(ps.realizado) AS realizado,
+                   SUM(ps.previsto) AS previsto,
+                   SUM(ps.limiteInferior) AS limiteInferior,
+                   SUM(ps.limiteSuperior) AS limiteSuperior
+              FROM PontoSerie ps
+             WHERE ps.previsao.medicamento.id = :medicamentoId
+             GROUP BY ps.periodo, ps.ordem
+             ORDER BY ps.ordem
+            """)
+    List<SeriePeriodoAgregada> agregarSeriePorMedicamento(@Param("medicamentoId") UUID medicamentoId);
+
     /** Previsao com a serie temporal carregada (drill-down/grafico). RF-PRV-02. */
     @Query("""
             SELECT DISTINCT p FROM Previsao p

@@ -77,7 +77,12 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   e derivações), `/indicadores/resumo` (total, atingidas, em progresso) e `/indicadores/{codigo}`
 >   (drill-down). Módulo de **governança somente leitura**. Migration `V7__indicador.sql` + seeder
 >   (6 indicadores × 12 pontos). 124 testes verdes.
-> - ⏳ Próxima: **Fase 9 — Painel/Dashboard** (RF-DASH).
+> - ✅ **Fase 9 — Painel/Dashboard** (RF-DASH): agregações de dashboard gerencial e painel
+>   operacional sob `/painel` e `/painel/operacional`. `CalculadoraPainel` (cobertura e status
+>   por unidade) pura/testável; `PainelService` consolida totais da rede, cobertura por unidade,
+>   série agregada de previsão (medicamento mais crítico), filas de alertas e recomendações.
+>   Somente leitura — qualquer autenticado. 130 testes verdes.
+> - ⏳ Próxima: **Fase 10 — Ingestão de Dados** (RF-DAD-01..08).
 
 ---
 
@@ -170,6 +175,17 @@ CRUD de usuários sob `/api/admin/usuarios`, **restrito ao perfil `TI`** (401 se
 
 ---
 
+## Painel / Dashboard (RF-DASH)
+
+Agregações somente leitura sob `/api/painel`, disponível para **qualquer autenticado** (401 sem token).
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/painel` | Dashboard gerencial: totais da rede, cobertura por unidade, série agregada de previsão (medicamento mais crítico), alertas recentes e recomendações pendentes. |
+| `GET` | `/painel/operacional` | Painel operacional: situação por unidade (cobertura, críticos, alertas, conectividade), fila de alertas ativos e recomendações em aberto. |
+
+---
+
 ## Módulos / Domínios
 
 Mapeados 1:1 com as telas do frontend e suas faixas de requisitos funcionais (`RF-*`):
@@ -255,5 +271,6 @@ src/main/resources/
 ├── application.yml
 └── db/migration/   # V<n>__*.sql (Flyway)
 ```
-#   s m a r t h e a l t h - f a r m - b a c k e n d  
+#   s m a r t h e a l t h - f a r m - b a c k e n d 
+ 
  

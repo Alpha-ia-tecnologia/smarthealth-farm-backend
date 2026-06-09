@@ -4,6 +4,7 @@ import com.alphatech.cahosp.alerta.dominio.Alerta;
 import com.alphatech.cahosp.alerta.dominio.Severidade;
 import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
 import com.alphatech.cahosp.alerta.dominio.TipoAlerta;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -63,6 +64,24 @@ public interface AlertaRepository extends JpaRepository<Alerta, UUID> {
     long countByTipoAndStatusNot(TipoAlerta tipo, StatusAlerta status);
 
     long countBySeveridadeAndStatusNot(Severidade severidade, StatusAlerta status);
+
+    /** Alertas ativos (nao resolvidos) de uma unidade — usado no resumo por unidade do painel. */
+    long countByUnidadeIdAndStatusNot(UUID unidadeId, StatusAlerta status);
+
+    /**
+     * Alertas mais urgentes ainda nao resolvidos (fila do painel), com relacionamentos
+     * carregados para montar a resposta sem N+1. RF-DASH-01/02.
+     */
+    @Query("""
+            SELECT DISTINCT a FROM Alerta a
+              JOIN FETCH a.medicamento
+              JOIN FETCH a.unidade
+              LEFT JOIN FETCH a.lote
+              LEFT JOIN FETCH a.destinatarios
+            WHERE a.status <> :status
+            ORDER BY a.diasParaEvento ASC
+            """)
+    List<Alerta> findUrgentesNaoResolvidos(@Param("status") StatusAlerta status, Pageable pageable);
 
     // ----- Suporte ao motor de geracao (idempotencia por chave natural) -----
 

@@ -5,6 +5,7 @@ import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.TipoRecomendacao;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -68,6 +69,35 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
 
     @Query("SELECT COALESCE(SUM(r.economiaEstimada), 0) FROM Recomendacao r")
     BigDecimal somarEconomiaEstimada();
+
+    /**
+     * Recomendacoes pendentes de maior economia (destaque do painel), com relacionamentos
+     * carregados. RF-DASH-01.
+     */
+    @Query("""
+            SELECT r FROM Recomendacao r
+              JOIN FETCH r.medicamento
+              JOIN FETCH r.unidadeDestino
+              LEFT JOIN FETCH r.unidadeOrigem
+            WHERE r.status = :status
+            ORDER BY r.economiaEstimada DESC
+            """)
+    List<Recomendacao> findPendentesPorImpacto(@Param("status") StatusRecomendacao status,
+                                               Pageable pageable);
+
+    /**
+     * Recomendacoes ainda nao executadas (pendentes ou aprovadas), ordenadas por impacto.
+     * RF-DASH-02 / RF-REC-04.
+     */
+    @Query("""
+            SELECT r FROM Recomendacao r
+              JOIN FETCH r.medicamento
+              JOIN FETCH r.unidadeDestino
+              LEFT JOIN FETCH r.unidadeOrigem
+            WHERE r.status <> :status
+            ORDER BY r.economiaEstimada DESC
+            """)
+    List<Recomendacao> findAbertas(@Param("status") StatusRecomendacao status, Pageable pageable);
 
     // ----- Suporte ao motor de geracao -----
 
