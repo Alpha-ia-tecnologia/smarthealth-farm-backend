@@ -82,7 +82,13 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   por unidade) pura/testável; `PainelService` consolida totais da rede, cobertura por unidade,
 >   série agregada de previsão (medicamento mais crítico), filas de alertas e recomendações.
 >   Somente leitura — qualquer autenticado. 130 testes verdes.
-> - ⏳ Próxima: **Fase 10 — Ingestão de Dados** (RF-DAD-01..08).
+> - ✅ **Fase 10 — Ingestão de Dados** (RF-DAD): `FonteDado` (status/qualidade/procedência,
+>   `ultimaIngestao` como `Instant`) e `QualidadeFamilia` (maturidade/completude/consistência/
+>   granularidade/lacunas por família terapêutica). `CalculadoraIngestao` (qualidade média)
+>   pura/testável. Endpoints `/ingestao/fontes`, `/ingestao/qualidade` e `/ingestao/resumo`
+>   (KPIs: registros, fontes sincronizadas, qualidade média, anonimização LGPD ativa).
+>   Migration `V8__ingestao.sql` + seeder (6 fontes × 8 famílias). Somente leitura. 136 testes verdes.
+> - ⏳ Próxima: **Fase 11 — Integração EMSERH** (RF-INT-01..06).
 
 ---
 
@@ -172,6 +178,18 @@ CRUD de usuários sob `/api/admin/usuarios`, **restrito ao perfil `TI`** (401 se
 | `PUT` | `/admin/usuarios/{id}/senha` | `{novaSenha}` redefine a senha (BCrypt). |
 
 > Sem `DELETE`: o desligamento é por **desativação** (`ativo=false`), preservando auditoria/LGPD.
+
+---
+
+## Ingestão de Dados (RF-DAD)
+
+Governança de dados somente leitura sob `/api/ingestao`, disponível para **qualquer autenticado**.
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/ingestao/fontes` | Lista fontes de dados (status, volume, qualidade, procedência, última ingestão). |
+| `GET` | `/ingestao/qualidade` | Maturidade e qualidade da base histórica por família terapêutica. |
+| `GET` | `/ingestao/resumo` | KPIs: registros ingeridos, fontes sincronizadas, qualidade média, anonimização LGPD. |
 
 ---
 
