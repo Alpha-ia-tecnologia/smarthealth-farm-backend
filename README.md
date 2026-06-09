@@ -51,7 +51,16 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   (**restrito a Gestor** — estabiliza drift e marca calibração). Migration `V4__previsao.sql`
 >   + seeder (210 previsões × 15 pontos, com sazonalidade epidemiológica). PRNG determinístico
 >   extraído para `comum/GeradorPseudoaleatorio` (reuso entre seeders). 84 testes verdes.
-> - ⏳ Próxima: **Fase 6 — Alertas** (desabastecimento + vencimento).
+> - ✅ **Fase 6 — Alertas** (RF-ALE): `Alerta` (tipo `Desabastecimento`/`Vencimento`, `Severidade`,
+>   `StatusAlerta`, destinatários por `Perfil` via `@ElementCollection`, FK opcional para o `Lote`).
+>   **Motor de geração por regra** (`GeradorAlerta`): desabastecimento a partir do estoque/cobertura
+>   (medicamento essencial em nível crítico) e vencimento a partir dos lotes na janela de 60 dias;
+>   `CalculadoraAlerta` (bandas de severidade) pura/testável. Endpoints `/alertas` (+ filtros tipo/
+>   severidade/status/unidade/medicamento/busca), `/alertas/resumo` (KPIs), `PATCH /alertas/{id}/status`
+>   (tratamento Aberto→Em tratamento→Resolvido, resolvido é terminal) e `POST /alertas/gerar`
+>   (**restrito a Gestor** — regenera renovando os abertos e preservando os já tratados). Migration
+>   `V5__alerta.sql` + seeder (106 alertas demo). Handler global para corpo inválido (400). 100 testes verdes.
+> - ⏳ Próxima: **Fase 7 — Recomendações** (reposição + redistribuição).
 
 ---
 

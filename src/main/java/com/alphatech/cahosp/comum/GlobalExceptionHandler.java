@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -50,6 +51,16 @@ public class GlobalExceptionHandler {
                 .map(this::descreverCampo)
                 .collect(Collectors.joining("; "));
         return resposta(HttpStatus.BAD_REQUEST, mensagem, "VALIDACAO");
+    }
+
+    /**
+     * Corpo da requisicao ilegivel ou semanticamente invalido (JSON malformado, valor de enum
+     * desconhecido recusado pelo {@code @JsonCreator}, tipo incompativel). E erro do cliente (400).
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Void>> tratarCorpoInvalido(HttpMessageNotReadableException ex) {
+        return resposta(HttpStatus.BAD_REQUEST,
+                "Corpo da requisicao invalido ou mal formatado.", "VALIDACAO");
     }
 
     /** Parametro de path/query com tipo invalido (ex.: ?perfil=Inexistente, id nao-UUID). */

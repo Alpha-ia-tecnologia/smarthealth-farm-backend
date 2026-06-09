@@ -34,4 +34,11 @@ public interface LoteRepository extends JpaRepository<Lote, UUID> {
                                 Sort sort);
 
     long countByQuantidadeGreaterThanAndValidadeLessThanEqual(int quantidade, LocalDate validadeAte);
+
+    /**
+     * Lotes com saldo acima de {@code quantidade} e validade ate a data, ordenados pela validade.
+     * Usado pelo motor de alertas de vencimento (RF-ALE-02).
+     */
+    List<Lote> findByQuantidadeGreaterThanAndValidadeLessThanEqualOrderByValidadeAsc(
+            int quantidade, LocalDate validadeAte);
 }
