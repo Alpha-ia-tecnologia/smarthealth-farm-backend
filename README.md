@@ -37,7 +37,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   30 medicamentos). Endpoints `/unidades` e `/medicamentos`: leitura para qualquer autenticado,
 >   escrita restrita a `TI`; filtros por enum aceitam o rótulo pt-BR (`?familia=Antibióticos`).
 >   56 testes verdes (27 unitários + 29 integração).
-> - ⏳ Próxima: **Fase 4 — Estoque** (`Lote`, `Movimentacao`, `PosicaoEstoque`).
+> - ✅ **Fase 4 — Estoque** (RF-EST): `Lote` (validade/fabricante), `Movimentacao` (livro-razão
+>   **imutável**: Entrada/Saída/Transferência/Ajuste) e `PosicaoEstoque` (parâmetros de
+>   dimensionamento + `quantidade` como projeção do livro-razão). `CalculadoraEstoque` (status
+>   ok/atenção/crítico + dias para vencer) como regra pura testável. Endpoints `/estoque`
+>   (posições com status, `/resumo` KPIs, drill-down `/{med}/{uni}`), `/lotes` e `/movimentacoes`.
+>   Migration `V3__estoque.sql` + seeder demo (210 posições, ~309 lotes, ~917 movimentações).
+>   72 testes verdes (32 unitários + 40 integração).
+> - ⏳ Próxima: **Fase 5 — Previsão de Demanda** (`Previsao`, `PontoSerie`).
 
 ---
 

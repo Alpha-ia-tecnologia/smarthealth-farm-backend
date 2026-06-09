@@ -1,5 +1,7 @@
 package com.alphatech.cahosp.config;
 
+import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
+import com.alphatech.cahosp.estoque.dominio.TipoMovimentacao;
 import com.alphatech.cahosp.medicamento.dominio.Criticidade;
 import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
 import com.alphatech.cahosp.unidade.dominio.Conectividade;
@@ -27,5 +29,7 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addConverter(String.class, Criticidade.class, Criticidade::fromJson);
         registry.addConverter(String.class, Porte.class, Porte::fromJson);
         registry.addConverter(String.class, Conectividade.class, Conectividade::fromJson);
+        registry.addConverter(String.class, StatusEstoque.class, StatusEstoque::fromJson);
+        registry.addConverter(String.class, TipoMovimentacao.class, TipoMovimentacao::fromJson);
     }
 }
