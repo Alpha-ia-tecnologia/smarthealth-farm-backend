@@ -1,0 +1,17 @@
+# Perfil de teste (*IT). A conexao real e fornecida pelo Testcontainers via
+# @ServiceConnection; os valores abaixo so garantem que os placeholders resolvam
+# e que segredos de teste existam sem depender de um .env.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/cahosp_test
+    username: test
+    password: test
+
+app:
+  jwt:
+    secret: segredo-de-teste-com-no-minimo-32-bytes-aqui-ok
+    expires-in: 3600000
+  admin:
+    nome: Admin Teste
+    email: admin.teste@cahosp.local
+    senha: SenhaTeste123

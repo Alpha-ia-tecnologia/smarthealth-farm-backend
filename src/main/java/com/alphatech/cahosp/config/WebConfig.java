@@ -1,0 +1,31 @@
+package com.alphatech.cahosp.config;
+
+import com.alphatech.cahosp.medicamento.dominio.Criticidade;
+import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.unidade.dominio.Conectividade;
+import com.alphatech.cahosp.unidade.dominio.Porte;
+import com.alphatech.cahosp.usuario.dominio.Perfil;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+/**
+ * Conversao de enums recebidos como query param (ex.: {@code ?familia=Antibióticos}).
+ *
+ * <p>O Spring converte enum por {@code name()} ({@code ANTIBIOTICOS}); o {@code @JsonCreator}
+ * dos enums so vale para o corpo JSON. Aqui registramos conversores que delegam ao
+ * {@code fromJson} de cada enum, aceitando tanto o nome quanto o rotulo pt-BR — alinhando o
+ * comportamento dos filtros de listagem ao restante da API. RF-DAD-06 / RF-ADM.
+ */
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addConverter(String.class, Perfil.class, Perfil::fromJson);
+        registry.addConverter(String.class, FamiliaTerapeutica.class, FamiliaTerapeutica::fromJson);
+        registry.addConverter(String.class, Criticidade.class, Criticidade::fromJson);
+        registry.addConverter(String.class, Porte.class, Porte::fromJson);
+        registry.addConverter(String.class, Conectividade.class, Conectividade::fromJson);
+    }
+}

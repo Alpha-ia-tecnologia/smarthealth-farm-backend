@@ -1,0 +1,32 @@
+# ===== Java / Maven =====
+target/
+*.jar
+*.war
+*.class
+schema-export.sql
+
+# ===== Ambiente / segredos =====
+.env
+*.env.local
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+nbproject/
+
+# ===== Sistema =====
+.DS_Store
+Thumbs.db
+
+# ===== Logs =====
+*.log
+logs/
+
+# ===== Maven Wrapper (mantemos os scripts; o jar e baixado on-demand) =====
+.mvn/wrapper/maven-wrapper.jar
+
+memory
