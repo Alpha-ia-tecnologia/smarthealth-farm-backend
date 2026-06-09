@@ -8,6 +8,10 @@ import com.alphatech.cahosp.estoque.dominio.TipoMovimentacao;
 import com.alphatech.cahosp.medicamento.dominio.Criticidade;
 import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
 import com.alphatech.cahosp.previsao.dominio.Drift;
+import com.alphatech.cahosp.recomendacao.dominio.OrigemMotor;
+import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
+import com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao;
+import com.alphatech.cahosp.recomendacao.dominio.TipoRecomendacao;
 import com.alphatech.cahosp.unidade.dominio.Conectividade;
 import com.alphatech.cahosp.unidade.dominio.Porte;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
@@ -39,5 +43,9 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addConverter(String.class, TipoAlerta.class, TipoAlerta::fromJson);
         registry.addConverter(String.class, Severidade.class, Severidade::fromJson);
         registry.addConverter(String.class, StatusAlerta.class, StatusAlerta::fromJson);
+        registry.addConverter(String.class, TipoRecomendacao.class, TipoRecomendacao::fromJson);
+        registry.addConverter(String.class, OrigemMotor.class, OrigemMotor::fromJson);
+        registry.addConverter(String.class, Prioridade.class, Prioridade::fromJson);
+        registry.addConverter(String.class, StatusRecomendacao.class, StatusRecomendacao::fromJson);
     }
 }

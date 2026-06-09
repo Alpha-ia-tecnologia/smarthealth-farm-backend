@@ -60,7 +60,17 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   (tratamento Aberto→Em tratamento→Resolvido, resolvido é terminal) e `POST /alertas/gerar`
 >   (**restrito a Gestor** — regenera renovando os abertos e preservando os já tratados). Migration
 >   `V5__alerta.sql` + seeder (106 alertas demo). Handler global para corpo inválido (400). 100 testes verdes.
-> - ⏳ Próxima: **Fase 7 — Recomendações** (reposição + redistribuição).
+> - ✅ **Fase 7 — Recomendações** (RF-REC): `Recomendacao` (tipo `Reposição`/`Redistribuição`,
+>   `OrigemMotor` Regras/IA, `Prioridade`, `StatusRecomendacao`, `economiaEstimada` em `BigDecimal` R$,
+>   FK para medicamento/unidade destino e origem opcional). **Motor de geração** (`GeradorRecomendacao`):
+>   redistribuição entre unidade crítica e unidade com excedente, e reposição dimensionada até o
+>   estoque máximo; `CalculadoraRecomendacao` (dimensionamento) pura/testável. Endpoints
+>   `/recomendacoes` (+ filtros tipo/status/motor/prioridade/unidade/medicamento/busca),
+>   `/recomendacoes/resumo` (KPIs: pendentes, economia potencial, geradas por IA, taxa de adesão),
+>   `POST /recomendacoes/{id}/aprovar` e `/executar` (ciclo Pendente→Aprovada→Executada) e
+>   `POST /recomendacoes/gerar` — **todas as ações restritas a Gestor**. Migration `V6__recomendacao.sql`
+>   + seeder (84 recomendações demo). 115 testes verdes.
+> - ⏳ Próxima: **Fase 8 — Indicadores** (RF-IND).
 
 ---
 
