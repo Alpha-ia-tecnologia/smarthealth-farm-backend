@@ -44,7 +44,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   (posições com status, `/resumo` KPIs, drill-down `/{med}/{uni}`), `/lotes` e `/movimentacoes`.
 >   Migration `V3__estoque.sql` + seeder demo (210 posições, ~309 lotes, ~917 movimentações).
 >   72 testes verdes (32 unitários + 40 integração).
-> - ⏳ Próxima: **Fase 5 — Previsão de Demanda** (`Previsao`, `PontoSerie`).
+> - ✅ **Fase 5 — Previsão de Demanda** (RF-PRV): `Previsao` (MAPE, modelo/versão, `Drift`,
+>   `calibradoEm`) + `PontoSerie` (série realizado/previsto com bandas). `CalculadoraPrevisao`
+>   (meta MAPE < 15%) pura/testável. Endpoints `/previsoes` (+ filtros), `/previsoes/resumo`
+>   (KPIs), `/previsoes/{med}/{uni}` (série completa) e `POST /previsoes/recalibrar`
+>   (**restrito a Gestor** — estabiliza drift e marca calibração). Migration `V4__previsao.sql`
+>   + seeder (210 previsões × 15 pontos, com sazonalidade epidemiológica). PRNG determinístico
+>   extraído para `comum/GeradorPseudoaleatorio` (reuso entre seeders). 84 testes verdes.
+> - ⏳ Próxima: **Fase 6 — Alertas** (desabastecimento + vencimento).
 
 ---
 

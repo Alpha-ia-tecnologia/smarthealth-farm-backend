@@ -1,5 +1,6 @@
 package com.alphatech.cahosp.estoque;
 
+import com.alphatech.cahosp.comum.GeradorPseudoaleatorio;
 import com.alphatech.cahosp.estoque.dominio.Lote;
 import com.alphatech.cahosp.estoque.dominio.Movimentacao;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
@@ -75,18 +76,19 @@ public class EstoqueSeeder implements CommandLineRunner {
 
         for (Medicamento med : medicamentos) {
             for (Unidade uni : unidades) {
-                Prng r = new Prng(fnv1a("est" + med.getCodigo() + uni.getSigla()));
+                GeradorPseudoaleatorio r =
+                        GeradorPseudoaleatorio.comSemente("est" + med.getCodigo() + uni.getSigla());
 
                 int consumoDiario = Math.max(1,
-                        arredondar((baseDemanda(med, uni) / 30.0) * (0.9 + r.next() * 0.2)));
-                int lead = arredondar(7 + r.next() * 22);
+                        arredondar((baseDemanda(med, uni) / 30.0) * (0.9 + r.proximo() * 0.2)));
+                int lead = arredondar(7 + r.proximo() * 22);
                 int nivelCritico = arredondar(consumoDiario * (lead + 5.0));
                 int estoqueMaximo = arredondar(consumoDiario * 60.0);
 
-                double fator = r.next();
-                int quantidade = fator < 0.18 ? arredondar(nivelCritico * (0.2 + r.next() * 0.5))
-                        : fator < 0.32 ? arredondar(nivelCritico * (1 + r.next() * 0.2))
-                        : arredondar(nivelCritico * (1.4 + r.next() * 1.4));
+                double fator = r.proximo();
+                int quantidade = fator < 0.18 ? arredondar(nivelCritico * (0.2 + r.proximo() * 0.5))
+                        : fator < 0.32 ? arredondar(nivelCritico * (1 + r.proximo() * 0.2))
+                        : arredondar(nivelCritico * (1.4 + r.proximo() * 1.4));
 
                 posicaoRepository.save(new PosicaoEstoque(med, uni, quantidade,
                         nivelCritico, estoqueMaximo, consumoDiario, lead));
@@ -98,22 +100,22 @@ public class EstoqueSeeder implements CommandLineRunner {
     }
 
     /** Cria os lotes (somando a quantidade da posicao) e seu historico de movimentacoes. */
-    private void semearLotes(Medicamento med, Unidade uni, int quantidade, Prng r) {
-        int nLotes = 1 + (int) Math.floor(r.next() * 2); // 1 ou 2
+    private void semearLotes(Medicamento med, Unidade uni, int quantidade, GeradorPseudoaleatorio r) {
+        int nLotes = 1 + (int) Math.floor(r.proximo() * 2); // 1 ou 2
         int restante = quantidade;
         List<Lote> lotesSalvos = new ArrayList<>();
         for (int k = 0; k < nLotes; k++) {
-            int qLote = (k == nLotes - 1) ? restante : arredondar(restante * (0.4 + r.next() * 0.3));
+            int qLote = (k == nLotes - 1) ? restante : arredondar(restante * (0.4 + r.proximo() * 0.3));
             restante -= qLote;
 
-            double venc = r.next();
-            int mesesValidade = venc < 0.2 ? 1 : venc < 0.35 ? 2 : 4 + (int) Math.floor(r.next() * 18);
+            double venc = r.proximo();
+            int mesesValidade = venc < 0.2 ? 1 : venc < 0.35 ? 2 : 4 + (int) Math.floor(r.proximo() * 18);
             LocalDate validade = BASE_VALIDADE.plusMonths(mesesValidade)
-                    .plusDays((int) Math.floor(r.next() * 27));
+                    .plusDays((int) Math.floor(r.proximo() * 27));
             String numeroLote = String.format("%s%s%04d",
                     med.getCodigo().replace("MED-", ""), uni.getSigla(),
-                    1000 + (int) Math.floor(r.next() * 8999));
-            String fabricante = FABRICANTES[(int) Math.floor(r.next() * FABRICANTES.length)];
+                    1000 + (int) Math.floor(r.proximo() * 8999));
+            String fabricante = FABRICANTES[(int) Math.floor(r.proximo() * FABRICANTES.length)];
 
             lotesSalvos.add(loteRepository.save(
                     new Lote(med, uni, numeroLote, validade, Math.max(0, qLote), fabricante)));
@@ -121,21 +123,21 @@ public class EstoqueSeeder implements CommandLineRunner {
         semearMovimentacoes(lotesSalvos, r);
     }
 
-    private void semearMovimentacoes(List<Lote> lotes, Prng r) {
+    private void semearMovimentacoes(List<Lote> lotes, GeradorPseudoaleatorio r) {
         List<Movimentacao> movs = new ArrayList<>();
         for (Lote lote : lotes) {
-            int nMov = 2 + (int) Math.floor(r.next() * 3); // 2 a 4
+            int nMov = 2 + (int) Math.floor(r.proximo() * 3); // 2 a 4
             for (int j = 0; j < nMov; j++) {
                 TipoMovimentacao tipo = j == 0 ? TipoMovimentacao.ENTRADA
-                        : r.next() > 0.8 ? TipoMovimentacao.TRANSFERENCIA : TipoMovimentacao.SAIDA;
-                int qMov = Math.max(1, arredondar(lote.getQuantidade() * (0.1 + r.next() * 0.4)));
+                        : r.proximo() > 0.8 ? TipoMovimentacao.TRANSFERENCIA : TipoMovimentacao.SAIDA;
+                int qMov = Math.max(1, arredondar(lote.getQuantidade() * (0.1 + r.proximo() * 0.4)));
                 LocalDateTime quando = LocalDateTime.of(
-                        2026, 3 + (int) Math.floor(r.next() * 3), 1 + (int) Math.floor(r.next() * 27),
-                        8 + (int) Math.floor(r.next() * 9), (int) Math.floor(r.next() * 59));
+                        2026, 3 + (int) Math.floor(r.proximo() * 3), 1 + (int) Math.floor(r.proximo() * 27),
+                        8 + (int) Math.floor(r.proximo() * 9), (int) Math.floor(r.proximo() * 59));
                 movs.add(new Movimentacao(lote, tipo, qMov,
                         quando.toInstant(ZoneOffset.UTC),
-                        RESPONSAVEIS[(int) Math.floor(r.next() * RESPONSAVEIS.length)],
-                        String.format("NF-%05d", 10000 + (int) Math.floor(r.next() * 89999))));
+                        RESPONSAVEIS[(int) Math.floor(r.proximo() * RESPONSAVEIS.length)],
+                        String.format("NF-%05d", 10000 + (int) Math.floor(r.proximo() * 89999))));
             }
         }
         movimentacaoRepository.saveAll(movs);
@@ -153,34 +155,5 @@ public class EstoqueSeeder implements CommandLineRunner {
 
     private int arredondar(double v) {
         return (int) Math.round(v);
-    }
-
-    // ---- PRNG determinístico (mulberry32 + FNV-1a 32 bits), espelhando o front ----
-
-    private static int fnv1a(String s) {
-        int h = 0x811c9dc5;
-        for (int i = 0; i < s.length(); i++) {
-            h ^= s.charAt(i);
-            h *= 16777619;
-        }
-        return h;
-    }
-
-    /** mulberry32: gerador rapido e reprodutivel, identico ao usado em src/data do front. */
-    private static final class Prng {
-        private int a;
-
-        Prng(int seed) {
-            this.a = seed;
-        }
-
-        double next() {
-            a += 0x6d2b79f5;
-            int t = a;
-            t = (t ^ (t >>> 15)) * (1 | t);
-            t = (t + ((t ^ (t >>> 7)) * (61 | t))) ^ t;
-            int u = t ^ (t >>> 14);
-            return Integer.toUnsignedLong(u) / 4294967296.0;
-        }
     }
 }

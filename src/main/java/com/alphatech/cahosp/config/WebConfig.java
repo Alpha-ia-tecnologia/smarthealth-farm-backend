@@ -4,6 +4,7 @@ import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
 import com.alphatech.cahosp.estoque.dominio.TipoMovimentacao;
 import com.alphatech.cahosp.medicamento.dominio.Criticidade;
 import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.previsao.dominio.Drift;
 import com.alphatech.cahosp.unidade.dominio.Conectividade;
 import com.alphatech.cahosp.unidade.dominio.Porte;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
@@ -31,5 +32,6 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addConverter(String.class, Conectividade.class, Conectividade::fromJson);
         registry.addConverter(String.class, StatusEstoque.class, StatusEstoque::fromJson);
         registry.addConverter(String.class, TipoMovimentacao.class, TipoMovimentacao::fromJson);
+        registry.addConverter(String.class, Drift.class, Drift::fromJson);
     }
 }
