@@ -70,7 +70,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   `POST /recomendacoes/{id}/aprovar` e `/executar` (ciclo Pendente→Aprovada→Executada) e
 >   `POST /recomendacoes/gerar` — **todas as ações restritas a Gestor**. Migration `V6__recomendacao.sql`
 >   + seeder (84 recomendações demo). 115 testes verdes.
-> - ⏳ Próxima: **Fase 8 — Indicadores** (RF-IND).
+> - ✅ **Fase 8 — Indicadores** (RF-IND): `IndicadorMeta` (código de negócio, `baseline`/`atual`/`meta`
+>   em `BigDecimal`, `metaReducaoPct`, `melhorMenor`) + `PontoHistorico` (série mensal da medição).
+>   `CalculadoraIndicador` (progresso até a meta, meta atingida, variação — base do comparativo
+>   piloto × sistema atual RF-IND-06) pura/testável. Endpoints `/indicadores` (lista com histórico
+>   e derivações), `/indicadores/resumo` (total, atingidas, em progresso) e `/indicadores/{codigo}`
+>   (drill-down). Módulo de **governança somente leitura**. Migration `V7__indicador.sql` + seeder
+>   (6 indicadores × 12 pontos). 124 testes verdes.
+> - ⏳ Próxima: **Fase 9 — Painel/Dashboard** (RF-DASH).
 
 ---
 
