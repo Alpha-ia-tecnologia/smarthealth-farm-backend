@@ -88,7 +88,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   pura/testável. Endpoints `/ingestao/fontes`, `/ingestao/qualidade` e `/ingestao/resumo`
 >   (KPIs: registros, fontes sincronizadas, qualidade média, anonimização LGPD ativa).
 >   Migration `V8__ingestao.sql` + seeder (6 fontes × 8 famílias). Somente leitura. 136 testes verdes.
-> - ⏳ Próxima: **Fase 11 — Integração EMSERH** (RF-INT-01..06).
+> - ✅ **Fase 11 — Integração EMSERH** (RF-INT): `IntegracaoApi` (status, latência, `ModoIntegracao`
+>   Online/Offline-buffer/Reconciliando, buffer offline) e `ProvedorIa` (papel, custo por 1k tokens,
+>   anonimização) do AI Gateway. `CalculadoraIntegracao` (latência média das conexões ativas)
+>   pura/testável. Endpoints `/integracoes`, `/integracoes/resumo` (operacionais, latência média,
+>   buffer, provedores) e `/integracoes/provedores-ia`. Migration `V10__integracao.sql` + seeder
+>   (5 integrações, 3 provedores); `V9__check_ingestao.sql` alinha a V8 ao padrão de CHECK
+>   constraints. Somente leitura. 143 testes verdes.
+> - ⏳ Próxima: **Fase 12 — IA Gateway** (RF-INT-06 · RF-SEG-04) e **Segurança/Auditoria** (RF-SEG).
 
 ---
 
