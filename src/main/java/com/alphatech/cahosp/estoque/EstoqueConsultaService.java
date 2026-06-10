@@ -96,7 +96,7 @@ public class EstoqueConsultaService {
         LocalDate hoje = LocalDate.now();
         LocalDate validadeAte = validadeAteDias == null ? null : hoje.plusDays(validadeAteDias);
         return loteRepository
-                .buscarComFiltros(unidadeId, medicamentoId, apenasComSaldo, validadeAte,
+                .findAll(EspecificacoesLote.comFiltros(unidadeId, medicamentoId, apenasComSaldo, validadeAte),
                         Sort.by("validade").ascending())
                 .stream()
                 .map(l -> LoteResponse.de(l, calculadora.diasParaVencer(l.getValidade(), hoje)))

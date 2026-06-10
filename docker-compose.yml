@@ -4,7 +4,7 @@
 #   docker compose up -d
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: cahosp-postgres
     environment:
       POSTGRES_DB: cahosp

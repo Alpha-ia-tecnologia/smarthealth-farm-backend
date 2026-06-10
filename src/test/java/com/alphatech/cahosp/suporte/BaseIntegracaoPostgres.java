@@ -21,8 +21,11 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @ActiveProfiles("test")
 public abstract class BaseIntegracaoPostgres {
 
+    // Mesma major version do ambiente (PostgreSQL 17) para que os *IT validem o comportamento real
+    // do banco de producao — divergencias de versao (ex.: inferencia de tipo de parametro) ja
+    // morderam aqui. Ver [[convencoes-enum-e-query]].
     @ServiceConnection
-    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:16-alpine");
+    static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>("postgres:17-alpine");
 
     static {
         POSTGRES.start();

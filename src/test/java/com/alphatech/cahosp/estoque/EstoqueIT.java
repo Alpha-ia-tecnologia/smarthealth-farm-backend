@@ -145,6 +145,28 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Lista lotes sem filtro (sem validadeAteDias) => 200 — regressao do tipo de parametro no Postgres")
+    void listarLotesSemFiltro() throws Exception {
+        mvc.perform(get("/lotes").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").isNumber())
+                .andExpect(jsonPath("$.data[0].diasParaVencer").isNumber());
+    }
+
+    @Test
+    @DisplayName("Lista lotes com filtros (validadeAteDias + comSaldo) => 200")
+    void listarLotesComFiltros() throws Exception {
+        mvc.perform(get("/lotes")
+                        .param("validadeAteDias", "60")
+                        .param("comSaldo", "true")
+                        .param("medicamentoId", medId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.total").isNumber());
+    }
+
+    @Test
     @DisplayName("Cria lote (201) e registra Entrada inicial")
     void criarLote() throws Exception {
         String validade = LocalDate.now().plusMonths(8).toString();

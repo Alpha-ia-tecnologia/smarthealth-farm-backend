@@ -1,37 +1,23 @@
 package com.alphatech.cahosp.estoque;
 
 import com.alphatech.cahosp.estoque.dominio.Lote;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-public interface LoteRepository extends JpaRepository<Lote, UUID> {
+/**
+ * Persistencia de lotes. O filtro dinamico da listagem usa {@link JpaSpecificationExecutor}
+ * (ver {@link EspecificacoesLote}) — evita o {@code :param IS NULL} de tipo indeterminado no
+ * PostgreSQL para o filtro de data nullable {@code validadeAte}.
+ */
+public interface LoteRepository extends JpaRepository<Lote, UUID>, JpaSpecificationExecutor<Lote> {
 
     List<Lote> findByMedicamentoIdAndUnidadeIdOrderByValidadeAsc(UUID medicamentoId, UUID unidadeId);
 
     boolean existsByNumeroLoteIgnoreCase(String numeroLote);
-
-    /**
-     * Lotes com filtros opcionais: unidade, medicamento, apenas com saldo, e validade ate uma
-     * data (controle de vencimento — RF-EST-02). RF-EST-01.
-     */
-    @Query("""
-            SELECT l FROM Lote l
-            WHERE (:unidadeId IS NULL OR l.unidade.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR l.medicamento.id = :medicamentoId)
-              AND (:apenasComSaldo = false OR l.quantidade > 0)
-              AND (:validadeAte IS NULL OR l.validade <= :validadeAte)
-            """)
-    List<Lote> buscarComFiltros(@Param("unidadeId") UUID unidadeId,
-                                @Param("medicamentoId") UUID medicamentoId,
-                                @Param("apenasComSaldo") boolean apenasComSaldo,
-                                @Param("validadeAte") LocalDate validadeAte,
-                                Sort sort);
 
     long countByQuantidadeGreaterThanAndValidadeLessThanEqual(int quantidade, LocalDate validadeAte);
 
