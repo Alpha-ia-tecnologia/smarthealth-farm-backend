@@ -8,6 +8,8 @@ import com.alphatech.cahosp.alerta.dto.AlertaResponse;
 import com.alphatech.cahosp.alerta.dto.GeracaoAlertasResponse;
 import com.alphatech.cahosp.alerta.dto.ResumoAlertasResponse;
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
+import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
+import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +34,13 @@ public class AlertaService {
 
     private final AlertaRepository alertaRepository;
     private final GeradorAlerta geradorAlerta;
+    private final RegistradorAuditoria auditoria;
 
-    public AlertaService(AlertaRepository alertaRepository, GeradorAlerta geradorAlerta) {
+    public AlertaService(AlertaRepository alertaRepository, GeradorAlerta geradorAlerta,
+                         RegistradorAuditoria auditoria) {
         this.alertaRepository = alertaRepository;
         this.geradorAlerta = geradorAlerta;
+        this.auditoria = auditoria;
     }
 
     /** Lista alertas com filtros opcionais (tipo, severidade, status, unidade, medicamento, busca). */
@@ -78,6 +83,8 @@ public class AlertaService {
     /** Dispara o motor de geracao por regra (RF-ALE-01/02 — acao de Gestor). */
     @Transactional
     public GeracaoAlertasResponse gerar() {
-        return geradorAlerta.gerar(LocalDate.now());
+        GeracaoAlertasResponse resultado = geradorAlerta.gerar(LocalDate.now());
+        auditoria.registrar(CategoriaAuditoria.GERAR_ALERTAS, "alertas:motor-regras");
+        return resultado;
     }
 }

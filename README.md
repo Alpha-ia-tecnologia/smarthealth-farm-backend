@@ -102,7 +102,19 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   — mascara e-mail/CPF/CNPJ/telefone/números longos, RF-SEG-04) e **modo demo resiliente**: sem
 >   chave de API ou em falha, devolve resposta simulada (`mode: "demo"`), nunca quebra. Resposta
 >   `{ content, model, mode, provider }`. Sem migration (não persiste). 156 testes verdes.
-> - ⏳ Próxima: **Fase 13 — Segurança & Auditoria** (RF-SEG-01..03): trilha `LogAuditoria`.
+> - ✅ **Fase 13 — Segurança & Auditoria** (RF-SEG): trilha `LogAuditoria` — **ledger imutável**
+>   (data `Instant`, ator em *snapshot* + referência fraca `usuarioId`, `CategoriaAuditoria` tipada,
+>   `recurso`, `baseLegal` LGPD, `assistidoPorIA`, `ip`). Porta `RegistradorAuditoria` (interface
+>   pequena, DIP) implementada por `AuditoriaService`, que resolve o ator (usuário + IP) pelo
+>   `ContextoAuditoria` — assim **as ações sensíveis já existentes passam a registrar auditoria sem
+>   acoplar controllers**: aprovar/executar recomendação, recalibrar previsão, gerar alertas e
+>   inferência por IA (anonimizada, RF-SEG-04) gravam na trilha na mesma transação da ação. Consulta
+>   somente leitura sob `/seguranca/auditoria` (lista com filtros + `/resumo`), **restrita a Gestor/TI**.
+>   Filtro dinâmico via JPA `Specification` (evita o `:param IS NULL` de tipo indeterminado no Postgres).
+>   Migration `V11__auditoria.sql` (CHECK em categoria/perfil) + seeder idempotente (21 eventos de
+>   demonstração, semeia se a trilha estiver vazia). **167 testes verdes.**
+>
+> 🎉 **Todos os domínios do `CLAUDE.md` concluídos** (Fases 0–13).
 
 ---
 
@@ -218,6 +230,24 @@ Agregações somente leitura sob `/api/painel`, disponível para **qualquer aute
 
 ---
 
+## Segurança & Auditoria (RF-SEG)
+
+Trilha de auditoria e conformidade LGPD sob `/api/seguranca/auditoria`. Módulo de governança
+**somente leitura**, **restrito a `Gestor`/`TI`** (401 sem token, 403 `ACESSO_NEGADO` para `Operador`).
+
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/seguranca/auditoria` | Lista a trilha (mais recentes primeiro); filtros `?categoria=&perfil=&assistidoPorIA=&busca=` (busca casa ação/usuário/recurso). |
+| `GET` | `/seguranca/auditoria/resumo` | KPIs: total de eventos, assistidos por IA, com base legal e última atividade. |
+
+O registro das ações sensíveis é **automático e desacoplado**: os serviços de domínio chamam a porta
+`RegistradorAuditoria` (não os controllers). Hoje gravam na trilha: aprovar/executar recomendação,
+recalibrar previsão, gerar alertas e cada inferência por IA (anonimizada antes do envio, RF-SEG-04).
+Cada registro é um **ledger imutável** com a base legal LGPD aplicável e o IP de origem; o ator é
+resolvido do contexto de segurança da requisição.
+
+---
+
 ## Módulos / Domínios
 
 Mapeados 1:1 com as telas do frontend e suas faixas de requisitos funcionais (`RF-*`):
@@ -303,6 +333,3 @@ src/main/resources/
 ├── application.yml
 └── db/migration/   # V<n>__*.sql (Flyway)
 ```
-#   s m a r t h e a l t h - f a r m - b a c k e n d 
- 
- 

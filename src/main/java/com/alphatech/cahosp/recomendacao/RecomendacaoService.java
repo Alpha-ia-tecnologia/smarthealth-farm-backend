@@ -9,6 +9,8 @@ import com.alphatech.cahosp.recomendacao.dominio.TipoRecomendacao;
 import com.alphatech.cahosp.recomendacao.dto.GeracaoRecomendacoesResponse;
 import com.alphatech.cahosp.recomendacao.dto.RecomendacaoResponse;
 import com.alphatech.cahosp.recomendacao.dto.ResumoRecomendacoesResponse;
+import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
+import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,11 +33,14 @@ public class RecomendacaoService {
 
     private final RecomendacaoRepository recomendacaoRepository;
     private final GeradorRecomendacao geradorRecomendacao;
+    private final RegistradorAuditoria auditoria;
 
     public RecomendacaoService(RecomendacaoRepository recomendacaoRepository,
-                               GeradorRecomendacao geradorRecomendacao) {
+                               GeradorRecomendacao geradorRecomendacao,
+                               RegistradorAuditoria auditoria) {
         this.recomendacaoRepository = recomendacaoRepository;
         this.geradorRecomendacao = geradorRecomendacao;
+        this.auditoria = auditoria;
     }
 
     /** Lista recomendacoes com filtros opcionais. RF-REC-01. */
@@ -71,7 +76,9 @@ public class RecomendacaoService {
     public RecomendacaoResponse aprovar(UUID id) {
         Recomendacao recomendacao = carregar(id);
         recomendacao.aprovar();
-        return RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
+        RecomendacaoResponse resposta = RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
+        auditoria.registrar(CategoriaAuditoria.APROVAR_RECOMENDACAO, "recomendacao:" + id);
+        return resposta;
     }
 
     /** Marca uma recomendacao aprovada como executada (RF-REC-05 — acao de Gestor). */
@@ -79,7 +86,9 @@ public class RecomendacaoService {
     public RecomendacaoResponse executar(UUID id) {
         Recomendacao recomendacao = carregar(id);
         recomendacao.executar();
-        return RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
+        RecomendacaoResponse resposta = RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
+        auditoria.registrar(CategoriaAuditoria.EXECUTAR_RECOMENDACAO, "recomendacao:" + id);
+        return resposta;
     }
 
     /** Dispara o motor de geracao por regra (RF-REC-01 — acao de Gestor). */

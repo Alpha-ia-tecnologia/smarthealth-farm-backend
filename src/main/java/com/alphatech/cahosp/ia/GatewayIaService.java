@@ -2,6 +2,8 @@ package com.alphatech.cahosp.ia;
 
 import com.alphatech.cahosp.ia.dto.ChatResponse;
 import com.alphatech.cahosp.ia.dto.MensagemChat;
+import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
+import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,13 +29,16 @@ public class GatewayIaService {
 
     private final List<ClienteIa> provedores;
     private final Anonimizador anonimizador;
+    private final RegistradorAuditoria auditoria;
 
-    public GatewayIaService(List<ClienteIa> provedores, Anonimizador anonimizador) {
+    public GatewayIaService(List<ClienteIa> provedores, Anonimizador anonimizador,
+                            RegistradorAuditoria auditoria) {
         // Ordena por prioridade (primario primeiro); imutavel apos a construcao.
         this.provedores = provedores.stream()
                 .sorted(Comparator.comparingInt(ClienteIa::prioridade))
                 .toList();
         this.anonimizador = anonimizador;
+        this.auditoria = auditoria;
     }
 
     /** Processa a conversa: anonimiza, tenta os provedores por prioridade e cai para o modo demo. */
@@ -49,6 +54,8 @@ public class GatewayIaService {
             try {
                 String conteudo = provedor.conversar(anonimizadas);
                 if (conteudo != null && !conteudo.isBlank()) {
+                    // RF-SEG-02/04: registra a inferencia externa (ja anonimizada) na trilha de auditoria.
+                    auditoria.registrar(CategoriaAuditoria.INFERENCIA_IA, "AI Gateway · " + provedor.nome());
                     return ChatResponse.online(conteudo, provedor.modelo(), provedor.nome());
                 }
                 log.warn("Provedor {} devolveu conteudo vazio; tentando o proximo.", provedor.nome());

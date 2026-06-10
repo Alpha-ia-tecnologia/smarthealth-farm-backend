@@ -9,6 +9,8 @@ import com.alphatech.cahosp.previsao.dto.PontoSerieResponse;
 import com.alphatech.cahosp.previsao.dto.PrevisaoDetalheResponse;
 import com.alphatech.cahosp.previsao.dto.PrevisaoResumoResponse;
 import com.alphatech.cahosp.previsao.dto.RecalibracaoResponse;
+import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
+import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,10 +30,13 @@ public class PrevisaoService {
 
     private final PrevisaoRepository previsaoRepository;
     private final CalculadoraPrevisao calculadora;
+    private final RegistradorAuditoria auditoria;
 
-    public PrevisaoService(PrevisaoRepository previsaoRepository, CalculadoraPrevisao calculadora) {
+    public PrevisaoService(PrevisaoRepository previsaoRepository, CalculadoraPrevisao calculadora,
+                           RegistradorAuditoria auditoria) {
         this.previsaoRepository = previsaoRepository;
         this.calculadora = calculadora;
+        this.auditoria = auditoria;
     }
 
     /** Lista previsoes com filtros opcionais (unidade, medicamento, drift, busca). RF-PRV-01. */
@@ -77,6 +82,7 @@ public class PrevisaoService {
         LocalDate hoje = LocalDate.now();
         List<Previsao> previsoes = previsaoRepository.findAll();
         previsoes.forEach(p -> p.recalibrar(hoje));
+        auditoria.registrar(CategoriaAuditoria.RECALIBRAR_PREVISAO, "previsao:todas");
         return new RecalibracaoResponse(previsoes.size(), hoje,
                 previsoes.size() + " previsoes recalibradas; drift estabilizado.");
     }
