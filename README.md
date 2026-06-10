@@ -95,7 +95,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   buffer, provedores) e `/integracoes/provedores-ia`. Migration `V10__integracao.sql` + seeder
 >   (5 integrações, 3 provedores); `V9__check_ingestao.sql` alinha a V8 ao padrão de CHECK
 >   constraints. Somente leitura. 143 testes verdes.
-> - ⏳ Próxima: **Fase 12 — IA Gateway** (RF-INT-06 · RF-SEG-04) e **Segurança/Auditoria** (RF-SEG).
+> - ✅ **Fase 12 — IA Gateway** (RF-INT-06 · RF-SEG-04): `POST /ia/chat` faz proxy para provedores
+>   externos atrás da interface `ClienteIa` (estratégia DeepSeek→OpenAI→Gemini por prioridade) via
+>   `RestClient` — DeepSeek/OpenAI compatíveis com OpenAI (`/chat/completions`), Gemini
+>   (`:generateContent`). **Anonimização obrigatória antes do envio** (`Anonimizador`/`AnonimizadorRegex`
+>   — mascara e-mail/CPF/CNPJ/telefone/números longos, RF-SEG-04) e **modo demo resiliente**: sem
+>   chave de API ou em falha, devolve resposta simulada (`mode: "demo"`), nunca quebra. Resposta
+>   `{ content, model, mode, provider }`. Sem migration (não persiste). 156 testes verdes.
+> - ⏳ Próxima: **Fase 13 — Segurança & Auditoria** (RF-SEG-01..03): trilha `LogAuditoria`.
 
 ---
 

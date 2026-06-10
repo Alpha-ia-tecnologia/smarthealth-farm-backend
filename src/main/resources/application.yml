@@ -63,6 +63,13 @@ app:
   integracao:
     enabled: ${INTEGRACAO_ENABLED:false}
   ia:
+    # Provedores do AI Gateway (RF-INT-06). Sem chave => modo demo (resposta simulada).
     deepseek-api-key: ${DEEPSEEK_API_KEY:}
+    deepseek-base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    deepseek-modelo: ${DEEPSEEK_MODELO:deepseek-chat}
     openai-api-key: ${OPENAI_API_KEY:}
+    openai-base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    openai-modelo: ${OPENAI_MODELO:gpt-4o-mini}
     gemini-api-key: ${GEMINI_API_KEY:}
+    gemini-base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+    gemini-modelo: ${GEMINI_MODELO:gemini-1.5-flash}
