@@ -1,6 +1,7 @@
 package com.alphatech.cahosp.alerta;
 
 import com.alphatech.cahosp.alerta.dominio.Alerta;
+import com.alphatech.cahosp.alerta.dominio.LimiarAlerta;
 import com.alphatech.cahosp.alerta.dominio.Severidade;
 import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
 import com.alphatech.cahosp.alerta.dominio.TipoAlerta;
@@ -10,7 +11,6 @@ import com.alphatech.cahosp.estoque.LoteRepository;
 import com.alphatech.cahosp.estoque.PosicaoEstoqueRepository;
 import com.alphatech.cahosp.estoque.dominio.Lote;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
-import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
 import com.alphatech.cahosp.medicamento.dominio.Medicamento;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import org.springframework.stereotype.Service;
@@ -22,15 +22,14 @@ import java.util.List;
 
 /**
  * Motor de geracao de alertas por regra (RF-ALE-01/02). Deriva alertas do estado atual do estoque,
- * da cobertura (consumo medio) e da validade dos lotes — espelhando o algoritmo do front
- * (src/data/index.ts):
+ * da cobertura (consumo medio) e da validade dos lotes, usando os <strong>limiares configurados</strong>
+ * ({@link LimiarAlerta}, RF-ALE-03) — alterar um limiar muda o proximo ciclo de geracao:
  *
  * <ul>
- *   <li><strong>Desabastecimento:</strong> para cada posicao de medicamento <em>essencial</em> em
- *       nivel critico, gera um alerta com severidade pela cobertura restante.</li>
- *   <li><strong>Vencimento:</strong> para cada lote com saldo e validade dentro da janela
- *       ({@value CalculadoraAlerta#JANELA_VENCIMENTO_DIAS} dias), gera um alerta com severidade
- *       pela antecedencia.</li>
+ *   <li><strong>Desabastecimento:</strong> posicao de medicamento <em>essencial</em> com saldo
+ *       abaixo do percentual configurado do estoque minimo; severidade pela cobertura restante.</li>
+ *   <li><strong>Vencimento:</strong> lote com saldo e validade dentro da janela configurada;
+ *       severidade pela antecedencia.</li>
  * </ul>
  *
  * <p><strong>Idempotencia/regeneracao:</strong> os alertas ainda {@code ABERTO} sao removidos e
@@ -49,17 +48,20 @@ public class GeradorAlerta {
     private final PosicaoEstoqueRepository posicaoRepository;
     private final LoteRepository loteRepository;
     private final AlertaRepository alertaRepository;
+    private final LimiarAlertaService limiarService;
     private final CalculadoraEstoque calculadoraEstoque;
     private final CalculadoraAlerta calculadoraAlerta;
 
     public GeradorAlerta(PosicaoEstoqueRepository posicaoRepository,
                          LoteRepository loteRepository,
                          AlertaRepository alertaRepository,
+                         LimiarAlertaService limiarService,
                          CalculadoraEstoque calculadoraEstoque,
                          CalculadoraAlerta calculadoraAlerta) {
         this.posicaoRepository = posicaoRepository;
         this.loteRepository = loteRepository;
         this.alertaRepository = alertaRepository;
+        this.limiarService = limiarService;
         this.calculadoraEstoque = calculadoraEstoque;
         this.calculadoraAlerta = calculadoraAlerta;
     }
@@ -67,10 +69,13 @@ public class GeradorAlerta {
     /** Regenera os alertas tomando {@code referencia} como "hoje" para os calculos de prazo. */
     @Transactional
     public GeracaoAlertasResponse gerar(LocalDate referencia) {
+        LimiarAlerta limiares = limiarService.configuracao();
         long abertosRenovados = alertaRepository.deleteByStatus(StatusAlerta.ABERTO);
 
-        long desabastecimento = gerarDesabastecimento();
-        long vencimento = gerarVencimento(referencia);
+        long desabastecimento = limiares.isDesabastecimentoAtivo()
+                ? gerarDesabastecimento(limiares) : 0;
+        long vencimento = limiares.isVencimentoAtivo()
+                ? gerarVencimento(referencia, limiares) : 0;
 
         long totalAtivo = alertaRepository.count();
         String mensagem = String.format(
@@ -80,14 +85,14 @@ public class GeradorAlerta {
                 desabastecimento, vencimento, abertosRenovados, totalAtivo, mensagem);
     }
 
-    /** RF-ALE-01: medicamento essencial em nivel critico vira alerta de desabastecimento. */
-    private long gerarDesabastecimento() {
+    /** RF-ALE-01: medicamento essencial com saldo abaixo do limiar vira alerta de desabastecimento. */
+    private long gerarDesabastecimento(LimiarAlerta limiares) {
         long gerados = 0;
         for (PosicaoEstoque pos : posicaoRepository.findAll()) {
             Medicamento med = pos.getMedicamento();
-            boolean critico = calculadoraEstoque.status(pos.getQuantidade(), pos.getNivelCritico())
-                    == StatusEstoque.CRITICO;
-            if (!critico || !med.isEssencial()) {
+            boolean abaixoDoMinimo = calculadoraAlerta.abaixoDoEstoqueMinimo(
+                    pos.getQuantidade(), pos.getNivelCritico(), limiares.getPercentualEstoqueMinimo());
+            if (!abaixoDoMinimo || !med.isEssencial()) {
                 continue;
             }
             if (alertaRepository.existsByTipoAndMedicamentoIdAndUnidadeIdAndLoteIsNull(
@@ -95,7 +100,7 @@ public class GeradorAlerta {
                 continue;
             }
             long dias = calculadoraAlerta.coberturaDias(pos.getQuantidade(), pos.getConsumoMedioDiario());
-            Severidade severidade = calculadoraAlerta.severidadePorCobertura(dias);
+            Severidade severidade = calculadoraAlerta.severidadePorCobertura(dias, limiares);
             String mensagem = String.format(
                     "Cobertura de %d dia(s) — abaixo do estoque mínimo (%d %s).",
                     dias, pos.getNivelCritico(), med.getUnidadeMedida());
@@ -106,9 +111,9 @@ public class GeradorAlerta {
         return gerados;
     }
 
-    /** RF-ALE-02: lote com saldo e validade na janela vira alerta de vencimento. */
-    private long gerarVencimento(LocalDate referencia) {
-        LocalDate validadeAte = referencia.plusDays(CalculadoraAlerta.JANELA_VENCIMENTO_DIAS);
+    /** RF-ALE-02: lote com saldo e validade na janela configurada vira alerta de vencimento. */
+    private long gerarVencimento(LocalDate referencia, LimiarAlerta limiares) {
+        LocalDate validadeAte = referencia.plusDays(limiares.getAntecedenciaVencimentoDias());
         List<Lote> lotes = loteRepository
                 .findByQuantidadeGreaterThanAndValidadeLessThanEqualOrderByValidadeAsc(0, validadeAte);
         long gerados = 0;
@@ -117,7 +122,7 @@ public class GeradorAlerta {
                 continue;
             }
             long dias = calculadoraEstoque.diasParaVencer(lote.getValidade(), referencia);
-            Severidade severidade = calculadoraAlerta.severidadePorVencimento(dias);
+            Severidade severidade = calculadoraAlerta.severidadePorVencimento(dias, limiares);
             Medicamento med = lote.getMedicamento();
             String mensagem = String.format(
                     "Lote %s (%d %s) vence em %d dia(s).",

@@ -6,6 +6,9 @@ import com.alphatech.cahosp.estoque.dto.LoteResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,14 +40,16 @@ public class LoteController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista lotes (filtros: unidade, medicamento, comSaldo, validadeAteDias)")
+    @Operation(summary = "Lista lotes, paginados (filtros: unidade, medicamento, comSaldo, validadeAteDias)")
     public ResponseEntity<ApiResponse<List<LoteResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID medicamentoId,
             @RequestParam(required = false, defaultValue = "false") boolean comSaldo,
-            @RequestParam(required = false) Integer validadeAteDias) {
-        return ResponseEntity.ok(ApiResponse.lista(
-                consultaService.listarLotes(unidadeId, medicamentoId, comSaldo, validadeAteDias)));
+            @RequestParam(required = false) Integer validadeAteDias,
+            @PageableDefault(size = 10, sort = "validade") Pageable pageable) {
+        Page<LoteResponse> pagina =
+                consultaService.listarLotes(unidadeId, medicamentoId, comSaldo, validadeAteDias, pageable);
+        return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @PostMapping

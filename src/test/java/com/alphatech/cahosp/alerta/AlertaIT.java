@@ -21,9 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -116,6 +118,104 @@ class AlertaIT extends BaseIntegracaoPostgres {
         mvc.perform(get("/alertas?status=Aberto").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].status").value("Aberto"));
+    }
+
+    @Test
+    @DisplayName("Paginacao: ?size=5 limita a pagina; total reflete o conjunto inteiro")
+    void paginacao() throws Exception {
+        mvc.perform(get("/alertas?page=0&size=5").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()", lessThanOrEqualTo(5)))
+                .andExpect(jsonPath("$.total").isNumber());
+    }
+
+    @Test
+    @DisplayName("Limiares: GET devolve a configuracao vigente (defaults da V12)")
+    void buscarLimiares() throws Exception {
+        mvc.perform(get("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.percentualEstoqueMinimo").isNumber())
+                .andExpect(jsonPath("$.data.antecedenciaVencimentoDias").isNumber())
+                .andExpect(jsonPath("$.data.desabastecimentoAtivo").isBoolean())
+                .andExpect(jsonPath("$.data.vencimentoAtivo").isBoolean());
+    }
+
+    @Test
+    @DisplayName("Limiares: Gestor atualiza (200) e o novo valor passa a vigorar")
+    void atualizarLimiaresComoGestor() throws Exception {
+        String corpo = """
+                {"percentualEstoqueMinimo":120,"coberturaCriticaDias":4,"coberturaAltaDias":9,
+                 "antecedenciaVencimentoDias":75,"vencimentoCriticoDias":15,"vencimentoAltoDias":35,
+                 "desabastecimentoAtivo":true,"vencimentoAtivo":true}
+                """;
+        mvc.perform(put("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.percentualEstoqueMinimo").value(120))
+                .andExpect(jsonPath("$.data.antecedenciaVencimentoDias").value(75));
+
+        mvc.perform(get("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.coberturaCriticaDias").value(4));
+    }
+
+    @Test
+    @DisplayName("Limiares: Operador nao pode alterar => 403 ACESSO_NEGADO")
+    void atualizarLimiaresComoOperador() throws Exception {
+        String corpo = """
+                {"percentualEstoqueMinimo":100,"coberturaCriticaDias":5,"coberturaAltaDias":10,
+                 "antecedenciaVencimentoDias":60,"vencimentoCriticoDias":20,"vencimentoAltoDias":40,
+                 "desabastecimentoAtivo":true,"vencimentoAtivo":true}
+                """;
+        mvc.perform(put("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.codigo").value("ACESSO_NEGADO"));
+    }
+
+    @Test
+    @DisplayName("Limiares: banda alta <= critica => 422 REGRA_NEGOCIO")
+    void limiarIncoerente() throws Exception {
+        String corpo = """
+                {"percentualEstoqueMinimo":100,"coberturaCriticaDias":10,"coberturaAltaDias":10,
+                 "antecedenciaVencimentoDias":60,"vencimentoCriticoDias":20,"vencimentoAltoDias":40,
+                 "desabastecimentoAtivo":true,"vencimentoAtivo":true}
+                """;
+        mvc.perform(put("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.codigo").value("REGRA_NEGOCIO"));
+    }
+
+    @Test
+    @DisplayName("Limiares: percentual fora da faixa => 400 VALIDACAO")
+    void limiarForaDaFaixa() throws Exception {
+        String corpo = """
+                {"percentualEstoqueMinimo":500,"coberturaCriticaDias":5,"coberturaAltaDias":10,
+                 "antecedenciaVencimentoDias":60,"vencimentoCriticoDias":20,"vencimentoAltoDias":40,
+                 "desabastecimentoAtivo":true,"vencimentoAtivo":true}
+                """;
+        mvc.perform(put("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("VALIDACAO"));
+    }
+
+    @Test
+    @DisplayName("Toggle desligado vale no motor: vencimento inativo => 0 vencimentos gerados")
+    void gerarComVencimentoDesligado() throws Exception {
+        String corpo = """
+                {"percentualEstoqueMinimo":100,"coberturaCriticaDias":5,"coberturaAltaDias":10,
+                 "antecedenciaVencimentoDias":60,"vencimentoCriticoDias":20,"vencimentoAltoDias":40,
+                 "desabastecimentoAtivo":true,"vencimentoAtivo":false}
+                """;
+        mvc.perform(put("/alertas/limiares").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON).content(corpo))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/alertas/gerar").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.vencimentoGerados").value(0));
     }
 
     @Test

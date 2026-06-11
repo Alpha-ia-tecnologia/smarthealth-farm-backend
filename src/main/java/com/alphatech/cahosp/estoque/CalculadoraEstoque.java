@@ -13,8 +13,11 @@ import java.time.temporal.ChronoUnit;
 @Component
 public class CalculadoraEstoque {
 
-    /** Margem de atencao acima do nivel critico (25%), conforme o front. */
-    private static final double FATOR_ATENCAO = 1.25;
+    /**
+     * Margem de atencao acima do nivel critico (25%), conforme o front. Visivel no pacote para
+     * que {@link EspecificacoesPosicao} aplique o mesmo limiar ao filtrar status na query (DRY).
+     */
+    static final double FATOR_ATENCAO = 1.25;
 
     /**
      * Situacao do estoque: {@code CRITICO} abaixo do nivel critico; {@code ATENCAO} ate 25%

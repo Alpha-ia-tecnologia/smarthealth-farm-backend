@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -105,6 +106,15 @@ class EstoqueIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.total").isNumber())
                 .andExpect(jsonPath("$.data[0].status").exists());
+    }
+
+    @Test
+    @DisplayName("Paginacao: ?size=5 limita a pagina; total reflete o conjunto inteiro")
+    void paginacaoPosicoes() throws Exception {
+        mvc.perform(get("/estoque?page=0&size=5").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()", lessThanOrEqualTo(5)))
+                .andExpect(jsonPath("$.total").isNumber());
     }
 
     @Test

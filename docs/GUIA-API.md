@@ -97,10 +97,12 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/alertas` | Lista; filtros `?tipo=&severidade=&status=&unidade=&medicamento=&busca=`. |
+| GET | `/alertas` | Lista **paginada** (`page`/`size`/`sort`); filtros `?tipo=&severidade=&status=&unidadeId=&medicamentoId=&busca=`. |
 | GET | `/alertas/resumo` | KPIs: abertos, desabastecimento, vencimento, tratados. |
+| GET | `/alertas/limiares` | Configuração vigente dos limiares de disparo (RF-ALE-03). |
+| PUT | `/alertas/limiares` | Atualiza os limiares **(Gestor; auditado)** — o motor usa na próxima geração. |
 | PATCH | `/alertas/{id}/status` | Trata: Aberto → Em tratamento → Resolvido (terminal). |
-| POST | `/alertas/gerar` | Regenera pelo motor de regras **(Gestor)**. |
+| POST | `/alertas/gerar` | Regenera pelo motor de regras **(Gestor)**, respeitando os limiares/toggles. |
 
 ## 8. Reposição & Redistribuição — `/recomendacoes`
 **Entidade:** `Recomendacao` (Reposição/Redistribuição, motor Regras/IA, prioridade, `economiaEstimada` R$, status).

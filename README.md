@@ -178,6 +178,23 @@ Toda a API usa **um envelope único**:
 As chaves do envelope (`success`/`data`/`error`) ficam em inglês por convenção técnica; o
 conteúdo é em português. Status HTTP corretos (200/201/204, 400, 401, 403, 404, 409, 422, 500).
 
+### Paginação (listas)
+
+Listas de grande volume são **paginadas no servidor** (parâmetros padrão do Spring Data):
+
+```
+GET /estoque?page=0&size=10&sort=quantidade,desc&busca=ceftri
+```
+
+- `page` (base 0, default 0) · `size` (default 10) · `sort=campo,(asc|desc)` (ex.: `sort=medicamento.nome`).
+- O envelope devolve **a página em `data`** e o **total de elementos do conjunto em `total`** (não o
+  tamanho da página) — o cliente calcula o número de páginas a partir de `total`.
+- Filtros e ordenação são aplicados **no banco** junto com a paginação. Para campos derivados
+  (ex.: `status` de estoque, calculado de `quantidade` vs. `nivelCritico`), a regra é empurrada para
+  a query via `Specification` (`EspecificacoesPosicao`), garantindo contagem de páginas correta.
+- Hoje paginados: `/estoque`, `/lotes`, `/movimentacoes`, `/alertas`. Demais listas recebem o mesmo
+  padrão conforme as telas consumidoras migram.
+
 ---
 
 ## Autenticação

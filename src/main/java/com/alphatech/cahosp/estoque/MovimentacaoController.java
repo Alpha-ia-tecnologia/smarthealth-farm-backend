@@ -7,6 +7,10 @@ import com.alphatech.cahosp.estoque.dto.RegistrarMovimentacaoRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -37,14 +41,16 @@ public class MovimentacaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista movimentacoes (filtros: medicamento, unidade, lote, tipo)")
+    @Operation(summary = "Lista movimentacoes, paginadas (filtros: medicamento, unidade, lote, tipo)")
     public ResponseEntity<ApiResponse<List<MovimentacaoResponse>>> listar(
             @RequestParam(required = false) UUID medicamentoId,
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID loteId,
-            @RequestParam(required = false) TipoMovimentacao tipo) {
-        return ResponseEntity.ok(ApiResponse.lista(
-                consultaService.listarMovimentacoes(medicamentoId, unidadeId, loteId, tipo)));
+            @RequestParam(required = false) TipoMovimentacao tipo,
+            @PageableDefault(size = 10, sort = "dataHora", direction = Sort.Direction.DESC) Pageable pageable) {
+        Page<MovimentacaoResponse> pagina =
+                consultaService.listarMovimentacoes(medicamentoId, unidadeId, loteId, tipo, pageable);
+        return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @PostMapping

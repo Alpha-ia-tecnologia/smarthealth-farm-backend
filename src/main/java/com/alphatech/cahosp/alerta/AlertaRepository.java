@@ -4,8 +4,8 @@ import com.alphatech.cahosp.alerta.dominio.Alerta;
 import com.alphatech.cahosp.alerta.dominio.Severidade;
 import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
 import com.alphatech.cahosp.alerta.dominio.TipoAlerta;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,16 +17,31 @@ import java.util.UUID;
 public interface AlertaRepository extends JpaRepository<Alerta, UUID> {
 
     /**
-     * Lista alertas com filtros opcionais (tipo, severidade, status, unidade, medicamento, busca).
-     * Medicamento, unidade e lote vem em fetch join para evitar N+1 ao montar a resposta
-     * (nomes, sigla, numero do lote). RF-ALE-01/02.
+     * Lista alertas, paginada, com filtros opcionais (tipo, severidade, status, unidade,
+     * medicamento, busca). Medicamento, unidade e lote vem em fetch join (to-one, compativel com
+     * paginacao no banco); os destinatarios (colecao EAGER) carregam por linha — volume pequeno
+     * por pagina. RF-ALE-01/02.
      */
-    @Query("""
-            SELECT DISTINCT a FROM Alerta a
+    @Query(value = """
+            SELECT a FROM Alerta a
               JOIN FETCH a.medicamento m
               JOIN FETCH a.unidade u
               LEFT JOIN FETCH a.lote l
-              LEFT JOIN FETCH a.destinatarios
+            WHERE (:tipo IS NULL OR a.tipo = :tipo)
+              AND (:severidade IS NULL OR a.severidade = :severidade)
+              AND (:status IS NULL OR a.status = :status)
+              AND (:unidadeId IS NULL OR u.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR m.id = :medicamentoId)
+              AND (:busca IS NULL
+                   OR LOWER(m.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(u.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(u.sigla) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(a.mensagem) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
+            """,
+            countQuery = """
+            SELECT COUNT(a) FROM Alerta a
+              JOIN a.medicamento m
+              JOIN a.unidade u
             WHERE (:tipo IS NULL OR a.tipo = :tipo)
               AND (:severidade IS NULL OR a.severidade = :severidade)
               AND (:status IS NULL OR a.status = :status)
@@ -38,13 +53,13 @@ public interface AlertaRepository extends JpaRepository<Alerta, UUID> {
                    OR LOWER(u.sigla) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
                    OR LOWER(a.mensagem) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
             """)
-    List<Alerta> buscarComFiltros(@Param("tipo") TipoAlerta tipo,
+    Page<Alerta> buscarComFiltros(@Param("tipo") TipoAlerta tipo,
                                   @Param("severidade") Severidade severidade,
                                   @Param("status") StatusAlerta status,
                                   @Param("unidadeId") UUID unidadeId,
                                   @Param("medicamentoId") UUID medicamentoId,
                                   @Param("busca") String busca,
-                                  Sort sort);
+                                  Pageable pageable);
 
     /** Alerta com os relacionamentos carregados (drill-down / resposta apos mudanca de status). */
     @Query("""

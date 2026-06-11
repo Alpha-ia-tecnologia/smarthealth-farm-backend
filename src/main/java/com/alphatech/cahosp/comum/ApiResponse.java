@@ -3,6 +3,7 @@ package com.alphatech.cahosp.comum;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Envelope unico de resposta de toda a API.
@@ -42,6 +43,15 @@ public record ApiResponse<T>(
     public static <T extends Collection<?>> ApiResponse<T> lista(T data) {
         long total = data == null ? 0 : data.size();
         return new ApiResponse<>(true, data, total, null, null);
+    }
+
+    /**
+     * Resposta de sucesso paginada: {@code data} e o conteudo da pagina e {@code total} e o
+     * total de elementos do conjunto (nao o tamanho da pagina) — o cliente calcula o numero
+     * de paginas a partir dele.
+     */
+    public static <E> ApiResponse<List<E>> pagina(List<E> conteudo, long total) {
+        return new ApiResponse<>(true, conteudo, total, null, null);
     }
 
     /** Resposta de erro com mensagem (pt-BR) e codigo estavel. */

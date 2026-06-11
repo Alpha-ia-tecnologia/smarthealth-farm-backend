@@ -7,6 +7,9 @@ import com.alphatech.cahosp.estoque.dto.PosicaoEstoqueResponse;
 import com.alphatech.cahosp.estoque.dto.ResumoEstoqueResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,14 +35,16 @@ public class EstoqueController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista posicoes de estoque com filtros (unidade, medicamento, status, busca)")
+    @Operation(summary = "Lista posicoes de estoque, paginadas, com filtros (unidade, medicamento, status, busca)")
     public ResponseEntity<ApiResponse<List<PosicaoEstoqueResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID medicamentoId,
             @RequestParam(required = false) StatusEstoque status,
-            @RequestParam(required = false) String busca) {
-        return ResponseEntity.ok(ApiResponse.lista(
-                consultaService.listarPosicoes(unidadeId, medicamentoId, status, busca)));
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 10, sort = "medicamento.nome") Pageable pageable) {
+        Page<PosicaoEstoqueResponse> pagina =
+                consultaService.listarPosicoes(unidadeId, medicamentoId, status, busca, pageable);
+        return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")

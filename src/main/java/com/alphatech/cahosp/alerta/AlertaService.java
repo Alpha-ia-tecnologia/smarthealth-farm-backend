@@ -10,27 +10,21 @@ import com.alphatech.cahosp.alerta.dto.ResumoAlertasResponse;
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
 import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
 import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 /**
- * Regra de negocio dos alertas (RF-ALE): consulta com filtros, KPIs do painel, tratamento
- * (transicao de status) e disparo do motor de geracao.
+ * Regra de negocio dos alertas (RF-ALE): consulta paginada com filtros, KPIs do painel,
+ * tratamento (transicao de status) e disparo do motor de geracao.
  */
 @Service
 @Transactional(readOnly = true)
 public class AlertaService {
-
-    /**
-     * Ordenacao: mais urgentes primeiro (menor cobertura/prazo). Espelha o
-     * {@code alertas.sort((a, b) => diasParaEvento)} do front.
-     */
-    private static final Sort ORDEM_URGENCIA = Sort.by("diasParaEvento").ascending();
 
     private final AlertaRepository alertaRepository;
     private final GeradorAlerta geradorAlerta;
@@ -43,15 +37,17 @@ public class AlertaService {
         this.auditoria = auditoria;
     }
 
-    /** Lista alertas com filtros opcionais (tipo, severidade, status, unidade, medicamento, busca). */
-    public List<AlertaResponse> listar(TipoAlerta tipo, Severidade severidade, StatusAlerta status,
-                                       UUID unidadeId, UUID medicamentoId, String busca) {
+    /**
+     * Lista alertas, paginada, com filtros opcionais (tipo, severidade, status, unidade,
+     * medicamento, busca). A ordenacao default (mais urgentes primeiro) vem do controller.
+     */
+    public Page<AlertaResponse> listar(TipoAlerta tipo, Severidade severidade, StatusAlerta status,
+                                       UUID unidadeId, UUID medicamentoId, String busca,
+                                       Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return alertaRepository
-                .buscarComFiltros(tipo, severidade, status, unidadeId, medicamentoId, termo, ORDEM_URGENCIA)
-                .stream()
-                .map(AlertaResponse::de)
-                .toList();
+                .buscarComFiltros(tipo, severidade, status, unidadeId, medicamentoId, termo, pageable)
+                .map(AlertaResponse::de);
     }
 
     /** KPIs do painel de alertas (RF-ALE-04/05). */
