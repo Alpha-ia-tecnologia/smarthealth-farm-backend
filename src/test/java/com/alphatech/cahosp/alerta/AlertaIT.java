@@ -223,12 +223,34 @@ class AlertaIT extends BaseIntegracaoPostgres {
     void resumo() throws Exception {
         mvc.perform(get("/alertas/resumo").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ativos").isNumber())
                 .andExpect(jsonPath("$.data.abertos").isNumber())
+                .andExpect(jsonPath("$.data.emTratamento").isNumber())
                 .andExpect(jsonPath("$.data.desabastecimento").isNumber())
                 .andExpect(jsonPath("$.data.vencimento").isNumber())
                 .andExpect(jsonPath("$.data.criticos").isNumber())
                 .andExpect(jsonPath("$.data.resolvidos").isNumber())
                 .andExpect(jsonPath("$.data.total").isNumber());
+    }
+
+    @Test
+    @DisplayName("KPIs são coerentes e somáveis: ativos = abertos+emTratamento = desab.+venc.; +resolvidos = total")
+    void resumoCoerente() throws Exception {
+        MvcResult res = mvc.perform(get("/alertas/resumo").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andReturn();
+        var data = objectMapper.readTree(res.getResponse().getContentAsString()).path("data");
+        long ativos = data.path("ativos").asLong();
+        long abertos = data.path("abertos").asLong();
+        long emTratamento = data.path("emTratamento").asLong();
+        long desabastecimento = data.path("desabastecimento").asLong();
+        long vencimento = data.path("vencimento").asLong();
+        long resolvidos = data.path("resolvidos").asLong();
+        long total = data.path("total").asLong();
+
+        org.assertj.core.api.Assertions.assertThat(ativos).isEqualTo(abertos + emTratamento);
+        org.assertj.core.api.Assertions.assertThat(desabastecimento + vencimento).isEqualTo(ativos);
+        org.assertj.core.api.Assertions.assertThat(ativos + resolvidos).isEqualTo(total);
     }
 
     @Test

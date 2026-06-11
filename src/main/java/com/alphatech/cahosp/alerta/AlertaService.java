@@ -62,8 +62,11 @@ public class AlertaService {
         long emTratamento = alertaRepository.countByStatus(StatusAlerta.EM_TRATAMENTO);
         long resolvidos = alertaRepository.countByStatus(StatusAlerta.RESOLVIDO);
         long total = alertaRepository.count();
+        // "Ativos" = não resolvidos: é o card principal e fecha com os cards por tipo
+        // (desabastecimento + vencimento == ativos) e com o todo (ativos + resolvidos == total).
+        long ativos = abertos + emTratamento;
         return new ResumoAlertasResponse(
-                abertos, desabastecimento, vencimento, criticos, emTratamento, resolvidos, total);
+                ativos, abertos, emTratamento, desabastecimento, vencimento, criticos, resolvidos, total);
     }
 
     /** Aplica uma transicao de status no tratamento de um alerta (RF-ALE-05). */

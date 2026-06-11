@@ -12,6 +12,15 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    # Pool enxuto: o banco e compartilhado e tem max_connections baixo. Cada instancia usa no
+    # maximo DB_POOL_SIZE conexoes (default 5, vs. 10 do Hikari) e devolve as ociosas rapido,
+    # evitando "FATAL: sorry, too many clients already" (SQLState 53300).
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:5}
+      minimum-idle: 1
+      idle-timeout: 30000        # solta conexoes ociosas apos 30s
+      max-lifetime: 600000       # recicla conexao apos 10min
+      connection-timeout: 30000  # falha rapido se o pool nao tiver conexao
 
   jpa:
     hibernate:
