@@ -85,7 +85,7 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/previsoes` | Lista; filtros `?unidade=&medicamento=&drift=&busca=`. |
+| GET | `/previsoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `medicamento.nome`); filtros `?unidadeId=&medicamentoId=&drift=&busca=`. |
 | GET | `/previsoes/resumo` | KPIs: MAPE médio, críticos na meta, com drift. |
 | GET | `/previsoes/{medicamentoId}/{unidadeId}` | Série temporal completa do item. |
 | POST | `/previsoes/recalibrar` | Recalibra os modelos e estabiliza drift **(Gestor)**. |

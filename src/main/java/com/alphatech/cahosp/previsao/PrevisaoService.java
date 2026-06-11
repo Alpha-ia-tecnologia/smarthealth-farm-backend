@@ -11,7 +11,8 @@ import com.alphatech.cahosp.previsao.dto.PrevisaoResumoResponse;
 import com.alphatech.cahosp.previsao.dto.RecalibracaoResponse;
 import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
 import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,16 +40,16 @@ public class PrevisaoService {
         this.auditoria = auditoria;
     }
 
-    /** Lista previsoes com filtros opcionais (unidade, medicamento, drift, busca). RF-PRV-01. */
-    public List<PrevisaoResumoResponse> listar(UUID unidadeId, UUID medicamentoId,
-                                               Drift drift, String busca) {
+    /**
+     * Lista previsoes, paginada, com filtros opcionais (unidade, medicamento, drift, busca).
+     * A ordenacao default (por medicamento) vem do controller. RF-PRV-01.
+     */
+    public Page<PrevisaoResumoResponse> listar(UUID unidadeId, UUID medicamentoId,
+                                               Drift drift, String busca, Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return previsaoRepository
-                .buscarComFiltros(unidadeId, medicamentoId, drift, termo,
-                        Sort.by("medicamento.nome").ascending())
-                .stream()
-                .map(PrevisaoResumoResponse::de)
-                .toList();
+                .buscarComFiltros(unidadeId, medicamentoId, drift, termo, pageable)
+                .map(PrevisaoResumoResponse::de);
     }
 
     /** Detalha uma previsao com a serie temporal completa. RF-PRV-02. */

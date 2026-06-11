@@ -97,6 +97,16 @@ class PrevisaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Pagina no servidor: ?size=1 devolve 1 item e o total do conjunto")
+    void paginar() throws Exception {
+        long total = previsaoRepository.count();
+        mvc.perform(get("/previsoes?page=0&size=1").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.total").value((int) total));
+    }
+
+    @Test
     @DisplayName("Filtro ?drift=Estável (rotulo) devolve apenas estaveis")
     void filtroDrift() throws Exception {
         mvc.perform(get("/previsoes?drift=Estável").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))

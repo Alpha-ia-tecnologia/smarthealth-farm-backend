@@ -8,6 +8,9 @@ import com.alphatech.cahosp.previsao.dto.PrevisaoResumoResponse;
 import com.alphatech.cahosp.previsao.dto.RecalibracaoResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,14 +38,16 @@ public class PrevisaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista previsoes com filtros (unidade, medicamento, drift, busca)")
+    @Operation(summary = "Lista previsoes, paginadas, com filtros (unidade, medicamento, drift, busca)")
     public ResponseEntity<ApiResponse<List<PrevisaoResumoResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID medicamentoId,
             @RequestParam(required = false) Drift drift,
-            @RequestParam(required = false) String busca) {
-        return ResponseEntity.ok(ApiResponse.lista(
-                previsaoService.listar(unidadeId, medicamentoId, drift, busca)));
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 10, sort = "medicamento.nome") Pageable pageable) {
+        Page<PrevisaoResumoResponse> pagina = previsaoService.listar(
+                unidadeId, medicamentoId, drift, busca, pageable);
+        return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")
