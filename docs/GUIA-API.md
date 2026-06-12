@@ -111,7 +111,7 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/recomendacoes` | Lista; filtros `?tipo=&status=&motor=&prioridade=&unidade=&medicamento=&busca=`. |
+| GET | `/recomendacoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `economiaEstimada` desc); filtros `?tipo=&status=&origemMotor=&prioridade=&unidadeId=&medicamentoId=&busca=`. |
 | GET | `/recomendacoes/resumo` | KPIs: pendentes, economia potencial, geradas por IA, taxa de adesão. |
 | POST | `/recomendacoes/{id}/aprovar` | Aprova uma pendente **(Gestor)**. |
 | POST | `/recomendacoes/{id}/executar` | Marca uma aprovada como executada **(Gestor)**. |

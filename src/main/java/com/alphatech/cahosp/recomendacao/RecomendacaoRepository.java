@@ -5,8 +5,8 @@ import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.TipoRecomendacao;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,11 +19,11 @@ import java.util.UUID;
 public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID> {
 
     /**
-     * Lista recomendacoes com filtros opcionais (tipo, status, origem do motor, prioridade,
-     * unidade — destino OU origem —, medicamento, busca). Medicamento e unidades vem em fetch
-     * join para evitar N+1 ao montar a resposta. RF-REC-01.
+     * Lista recomendacoes, paginada, com filtros opcionais (tipo, status, origem do motor,
+     * prioridade, unidade — destino OU origem —, medicamento, busca). Medicamento e unidades vem
+     * em fetch join (to-one, compativel com paginacao no banco) para evitar N+1. RF-REC-01.
      */
-    @Query("""
+    @Query(value = """
             SELECT r FROM Recomendacao r
               JOIN FETCH r.medicamento m
               JOIN FETCH r.unidadeDestino ud
@@ -39,15 +39,32 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
                    OR LOWER(ud.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
                    OR LOWER(ud.sigla) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
                    OR LOWER(r.justificativa) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
+            """,
+            countQuery = """
+            SELECT COUNT(r) FROM Recomendacao r
+              JOIN r.medicamento m
+              JOIN r.unidadeDestino ud
+              LEFT JOIN r.unidadeOrigem uo
+            WHERE (:tipo IS NULL OR r.tipo = :tipo)
+              AND (:status IS NULL OR r.status = :status)
+              AND (:origemMotor IS NULL OR r.origemMotor = :origemMotor)
+              AND (:prioridade IS NULL OR r.prioridade = :prioridade)
+              AND (:unidadeId IS NULL OR ud.id = :unidadeId OR uo.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR m.id = :medicamentoId)
+              AND (:busca IS NULL
+                   OR LOWER(m.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(ud.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(ud.sigla) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
+                   OR LOWER(r.justificativa) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%')))
             """)
-    List<Recomendacao> buscarComFiltros(@Param("tipo") TipoRecomendacao tipo,
+    Page<Recomendacao> buscarComFiltros(@Param("tipo") TipoRecomendacao tipo,
                                         @Param("status") StatusRecomendacao status,
                                         @Param("origemMotor") OrigemMotor origemMotor,
                                         @Param("prioridade") Prioridade prioridade,
                                         @Param("unidadeId") UUID unidadeId,
                                         @Param("medicamentoId") UUID medicamentoId,
                                         @Param("busca") String busca,
-                                        Sort sort);
+                                        Pageable pageable);
 
     /** Recomendacao com os relacionamentos carregados (resposta apos aprovar/executar). */
     @Query("""

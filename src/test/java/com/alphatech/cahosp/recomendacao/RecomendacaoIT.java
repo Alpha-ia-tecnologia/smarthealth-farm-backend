@@ -102,6 +102,16 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Pagina no servidor: ?size=1 devolve 1 item e o total do conjunto")
+    void paginar() throws Exception {
+        long total = recomendacaoRepository.count();
+        mvc.perform(get("/recomendacoes?page=0&size=1").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.total").value((int) total));
+    }
+
+    @Test
     @DisplayName("Filtro ?tipo=Reposição (rotulo) devolve apenas reposicoes")
     void filtroTipo() throws Exception {
         mvc.perform(get("/recomendacoes?tipo=Reposição").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))

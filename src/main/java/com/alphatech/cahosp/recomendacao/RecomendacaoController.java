@@ -10,6 +10,10 @@ import com.alphatech.cahosp.recomendacao.dto.RecomendacaoResponse;
 import com.alphatech.cahosp.recomendacao.dto.ResumoRecomendacoesResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +42,7 @@ public class RecomendacaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista recomendacoes com filtros (tipo, status, motor, prioridade, unidade, medicamento, busca)")
+    @Operation(summary = "Lista recomendacoes, paginadas, com filtros (tipo, status, motor, prioridade, unidade, medicamento, busca)")
     public ResponseEntity<ApiResponse<List<RecomendacaoResponse>>> listar(
             @RequestParam(required = false) TipoRecomendacao tipo,
             @RequestParam(required = false) StatusRecomendacao status,
@@ -46,9 +50,12 @@ public class RecomendacaoController {
             @RequestParam(required = false) Prioridade prioridade,
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID medicamentoId,
-            @RequestParam(required = false) String busca) {
-        return ResponseEntity.ok(ApiResponse.lista(recomendacaoService.listar(
-                tipo, status, origemMotor, prioridade, unidadeId, medicamentoId, busca)));
+            @RequestParam(required = false) String busca,
+            @PageableDefault(size = 10, sort = "economiaEstimada", direction = Sort.Direction.DESC)
+            Pageable pageable) {
+        Page<RecomendacaoResponse> pagina = recomendacaoService.listar(
+                tipo, status, origemMotor, prioridade, unidadeId, medicamentoId, busca, pageable);
+        return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")

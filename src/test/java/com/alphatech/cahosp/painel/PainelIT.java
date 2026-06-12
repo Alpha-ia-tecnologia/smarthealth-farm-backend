@@ -80,6 +80,9 @@ class PainelIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.data.totais.medicamentos").value(30))
                 .andExpect(jsonPath("$.data.totais.unidades").value(7))
                 .andExpect(jsonPath("$.data.totais.alertasAbertos").isNumber())
+                // "ativos" (abertos + em tratamento) bate com a metrica da tela de alertas:
+                // nao resolvidos = desabastecimento + vencimento.
+                .andExpect(jsonPath("$.data.totais.alertasAtivos").isNumber())
                 .andExpect(jsonPath("$.data.totais.economiaPotencial").exists())
                 .andExpect(jsonPath("$.data.coberturaPorUnidade").isArray())
                 .andExpect(jsonPath("$.data.coberturaPorUnidade.length()").value(7))

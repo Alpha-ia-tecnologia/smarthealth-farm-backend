@@ -11,13 +11,13 @@ import com.alphatech.cahosp.recomendacao.dto.RecomendacaoResponse;
 import com.alphatech.cahosp.recomendacao.dto.ResumoRecomendacoesResponse;
 import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
 import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -27,9 +27,6 @@ import java.util.UUID;
 @Service
 @Transactional(readOnly = true)
 public class RecomendacaoService {
-
-    /** Ordenacao: maior economia primeiro (recomendacoes de maior impacto no topo da fila). */
-    private static final Sort ORDEM_IMPACTO = Sort.by("economiaEstimada").descending();
 
     private final RecomendacaoRepository recomendacaoRepository;
     private final GeradorRecomendacao geradorRecomendacao;
@@ -43,17 +40,19 @@ public class RecomendacaoService {
         this.auditoria = auditoria;
     }
 
-    /** Lista recomendacoes com filtros opcionais. RF-REC-01. */
-    public List<RecomendacaoResponse> listar(TipoRecomendacao tipo, StatusRecomendacao status,
+    /**
+     * Lista recomendacoes, paginada, com filtros opcionais. A ordenacao default (maior economia
+     * primeiro) vem do controller. RF-REC-01.
+     */
+    public Page<RecomendacaoResponse> listar(TipoRecomendacao tipo, StatusRecomendacao status,
                                              OrigemMotor origemMotor, Prioridade prioridade,
-                                             UUID unidadeId, UUID medicamentoId, String busca) {
+                                             UUID unidadeId, UUID medicamentoId, String busca,
+                                             Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return recomendacaoRepository
                 .buscarComFiltros(tipo, status, origemMotor, prioridade, unidadeId, medicamentoId,
-                        termo, ORDEM_IMPACTO)
-                .stream()
-                .map(RecomendacaoResponse::de)
-                .toList();
+                        termo, pageable)
+                .map(RecomendacaoResponse::de);
     }
 
     /** KPIs do painel de recomendacoes (RF-REC-01/02/03/05). */

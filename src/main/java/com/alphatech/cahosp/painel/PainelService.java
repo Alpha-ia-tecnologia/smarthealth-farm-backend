@@ -103,10 +103,13 @@ public class PainelService {
         BigDecimal economia = recomendacaoRepository.somarEconomiaEstimada()
                 .setScale(2, RoundingMode.HALF_UP);
         LocalDate limiteVencimento = LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO);
+        long abertos = alertaRepository.countByStatus(StatusAlerta.ABERTO);
+        long emTratamento = alertaRepository.countByStatus(StatusAlerta.EM_TRATAMENTO);
         return new TotaisRedeResponse(
                 medicamentoRepository.count(),
                 unidadeRepository.countByHubFalse(),
-                alertaRepository.countByStatus(StatusAlerta.ABERTO),
+                abertos,
+                abertos + emTratamento,
                 alertaRepository.countByTipoAndStatusNot(TipoAlerta.DESABASTECIMENTO, StatusAlerta.RESOLVIDO),
                 alertaRepository.countByTipoAndStatusNot(TipoAlerta.VENCIMENTO, StatusAlerta.RESOLVIDO),
                 recomendacaoRepository.countByStatus(StatusRecomendacao.PENDENTE),
