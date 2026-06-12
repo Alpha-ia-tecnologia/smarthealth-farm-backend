@@ -3,6 +3,8 @@ package com.alphatech.cahosp.usuario;
 import com.alphatech.cahosp.comum.excecao.ConflitoException;
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
 import com.alphatech.cahosp.usuario.dto.AtualizarUsuarioRequest;
@@ -26,10 +28,14 @@ import java.util.UUID;
 public class UsuarioAdminService {
 
     private final UsuarioRepository usuarioRepository;
+    private final UnidadeRepository unidadeRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public UsuarioAdminService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioAdminService(UsuarioRepository usuarioRepository,
+                               UnidadeRepository unidadeRepository,
+                               PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
+        this.unidadeRepository = unidadeRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -60,6 +66,7 @@ public class UsuarioAdminService {
                 request.email(),
                 passwordEncoder.encode(request.senha()),
                 request.perfil());
+        usuario.setUnidade(resolverUnidade(request.unidadeId()));
         return UsuarioResponse.de(usuarioRepository.save(usuario));
     }
 
@@ -78,6 +85,7 @@ public class UsuarioAdminService {
         usuario.setNome(request.nome());
         usuario.setEmail(request.email());
         usuario.setPerfil(request.perfil());
+        usuario.setUnidade(resolverUnidade(request.unidadeId()));
         return UsuarioResponse.de(usuario);
     }
 
@@ -110,5 +118,15 @@ public class UsuarioAdminService {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Usuario nao encontrado: " + id + "."));
+    }
+
+    /** Resolve a unidade de lotacao opcional; null = sem unidade. 404 se o id nao existir. */
+    private Unidade resolverUnidade(UUID unidadeId) {
+        if (unidadeId == null) {
+            return null;
+        }
+        return unidadeRepository.findById(unidadeId)
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
+                        "Unidade nao encontrada: " + unidadeId + "."));
     }
 }

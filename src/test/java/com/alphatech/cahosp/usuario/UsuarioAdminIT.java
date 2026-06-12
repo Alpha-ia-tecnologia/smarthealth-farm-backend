@@ -1,6 +1,8 @@
 package com.alphatech.cahosp.usuario;
 
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +44,9 @@ class UsuarioAdminIT extends BaseIntegracaoPostgres {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UnidadeRepository unidadeRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -132,6 +137,41 @@ class UsuarioAdminIT extends BaseIntegracaoPostgres {
                         .content("{ \"ativo\": false }"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.ativo").value(false));
+    }
+
+    @Test
+    @DisplayName("TI cria usuario com unidade de lotacao (opcional) e a resposta traz sigla/nome")
+    void criaComUnidade() throws Exception {
+        Unidade unidade = unidadeRepository.findAll().get(0);
+        String email = "lotado." + UUID.randomUUID().toString().substring(0, 8) + "@cahosp.local";
+
+        mvc.perform(post("/admin/usuarios")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "nome": "Lotado", "email": "%s", "perfil": "Operador",
+                                  "senha": "senha1234", "unidadeId": "%s" }
+                                """.formatted(email, unidade.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.unidadeId").value(unidade.getId().toString()))
+                .andExpect(jsonPath("$.data.unidadeSigla").value(unidade.getSigla()))
+                .andExpect(jsonPath("$.data.unidadeNome").value(unidade.getNome()));
+    }
+
+    @Test
+    @DisplayName("Criar com unidadeId inexistente devolve 404 NAO_ENCONTRADO")
+    void criaComUnidadeInexistente() throws Exception {
+        String email = "semuni." + UUID.randomUUID().toString().substring(0, 8) + "@cahosp.local";
+
+        mvc.perform(post("/admin/usuarios")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "nome": "X", "email": "%s", "perfil": "Operador",
+                                  "senha": "senha1234", "unidadeId": "%s" }
+                                """.formatted(email, UUID.randomUUID())))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.codigo").value("NAO_ENCONTRADO"));
     }
 
     @Test

@@ -13,7 +13,13 @@ import java.util.UUID;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
 
-    Optional<Usuario> findByEmailIgnoreCase(String email);
+    /**
+     * Busca por e-mail (login). Traz a unidade com {@code JOIN FETCH} para que a serializacao
+     * do usuario autenticado (ex.: {@code GET /auth/me}, fora de transacao) nao dispare
+     * LazyInitializationException ao ler a unidade de lotacao.
+     */
+    @Query("SELECT u FROM Usuario u LEFT JOIN FETCH u.unidade WHERE LOWER(u.email) = LOWER(:email)")
+    Optional<Usuario> findByEmailIgnoreCase(@Param("email") String email);
 
     boolean existsByEmailIgnoreCase(String email);
 
@@ -23,6 +29,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, UUID> {
      */
     @Query("""
             SELECT u FROM Usuario u
+            LEFT JOIN FETCH u.unidade
             WHERE (:perfil IS NULL OR u.perfil = :perfil)
               AND (:ativo IS NULL OR u.ativo = :ativo)
               AND (:busca IS NULL

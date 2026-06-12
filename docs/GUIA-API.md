@@ -29,7 +29,7 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 | POST | `/auth/logout` | Stateless — o front só descarta o token. |
 
 ## 2. Administração de usuários — `/admin/usuarios` *(perfil TI)*
-**Entidade:** `Usuario` (nome, e-mail, `perfil`, `unidade`, `ativo`). Senha em BCrypt.
+**Entidade:** `Usuario` (nome, e-mail, `perfil`, `unidade` opcional, `ativo`). Senha em BCrypt.
 **Para que serve:** o TI gerencia quem acessa o sistema. Sem DELETE — desliga por desativação (LGPD).
 **Tela:** Administração (`/admin`).
 
@@ -37,10 +37,13 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 |---|---|---|
 | GET | `/admin/usuarios` | Lista; filtros `?perfil=&ativo=&busca=` (busca por nome/e-mail). |
 | GET | `/admin/usuarios/{id}` | Detalha um usuário. |
-| POST | `/admin/usuarios` | Cria usuário (e-mail único, senha ≥ 8). |
-| PUT | `/admin/usuarios/{id}` | Atualiza nome, e-mail e perfil. |
-| PATCH | `/admin/usuarios/{id}/status` | Ativa/desativa (o TI não pode se autodesativar). |
+| POST | `/admin/usuarios` | Cria usuário (e-mail único, senha ≥ 8; `unidadeId` opcional). |
+| PUT | `/admin/usuarios/{id}` | Atualiza nome, e-mail, perfil e `unidadeId` (opcional). |
+| PATCH | `/admin/usuarios/{id}/status` | Ativa/desativa (o TI não pode se autodesativar → 422). |
 | PUT | `/admin/usuarios/{id}/senha` | Redefine a senha. |
+
+> **Unidade de lotação (opcional).** O `UsuarioResponse` traz `unidadeId`/`unidadeSigla`/`unidadeNome`
+> (nulos quando sem unidade). Em criar/atualizar, `unidadeId` é opcional; `unidadeId` inexistente → 404.
 
 ## 3. Unidades — `/unidades`
 **Entidade:** `Unidade` (CAHOSP central + hospitais atendidos; porte, conectividade, hub, ativo).

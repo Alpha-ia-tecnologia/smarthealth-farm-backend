@@ -52,7 +52,7 @@ class AuthControllerTest {
     @DisplayName("POST /auth/login valido devolve envelope com usuario e token")
     void loginOk() throws Exception {
         var usuario = new UsuarioResponse(UUID.randomUUID(), "Ana", "ana@emserh.ma.gov.br",
-                "Gestor", true, Instant.now());
+                "Gestor", true, null, null, null, Instant.now());
         when(autenticacaoService.login(any())).thenReturn(new LoginResponse(usuario, "jwt-fake"));
 
         mvc.perform(post("/auth/login")

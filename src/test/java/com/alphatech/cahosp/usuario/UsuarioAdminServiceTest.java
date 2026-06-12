@@ -3,6 +3,8 @@ package com.alphatech.cahosp.usuario;
 import com.alphatech.cahosp.comum.excecao.ConflitoException;
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
 import com.alphatech.cahosp.usuario.dto.AtualizarUsuarioRequest;
@@ -37,6 +39,9 @@ class UsuarioAdminServiceTest {
     private UsuarioRepository usuarioRepository;
 
     @Mock
+    private UnidadeRepository unidadeRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -46,7 +51,7 @@ class UsuarioAdminServiceTest {
     @DisplayName("criar com e-mail duplicado lanca ConflitoException")
     void criarEmailDuplicado() {
         when(usuarioRepository.existsByEmailIgnoreCase("dup@cahosp.local")).thenReturn(true);
-        var request = new CriarUsuarioRequest("Maria", "dup@cahosp.local", Perfil.OPERADOR, "senha1234");
+        var request = new CriarUsuarioRequest("Maria", "dup@cahosp.local", Perfil.OPERADOR, "senha1234", null);
 
         assertThatThrownBy(() -> service.criar(request))
                 .isInstanceOf(ConflitoException.class);
@@ -61,7 +66,7 @@ class UsuarioAdminServiceTest {
         when(passwordEncoder.encode("senha1234")).thenReturn("HASH-BCRYPT");
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        var request = new CriarUsuarioRequest("Maria", "maria@cahosp.local", Perfil.GESTOR, "senha1234");
+        var request = new CriarUsuarioRequest("Maria", "maria@cahosp.local", Perfil.GESTOR, "senha1234", null);
         service.criar(request);
 
         verify(passwordEncoder).encode("senha1234");
@@ -69,6 +74,39 @@ class UsuarioAdminServiceTest {
         verify(usuarioRepository).save(captor.capture());
         assertThat(captor.getValue().getSenhaHash()).isEqualTo("HASH-BCRYPT");
         assertThat(captor.getValue().getSenhaHash()).isNotEqualTo("senha1234");
+        assertThat(captor.getValue().getUnidade()).isNull();
+    }
+
+    @Test
+    @DisplayName("criar com unidadeId resolve a unidade e a vincula ao usuario")
+    void criarComUnidade() {
+        UUID unidadeId = UUID.randomUUID();
+        Unidade unidade = org.mockito.Mockito.mock(Unidade.class);
+        when(usuarioRepository.existsByEmailIgnoreCase(anyString())).thenReturn(false);
+        when(unidadeRepository.findById(unidadeId)).thenReturn(Optional.of(unidade));
+        when(passwordEncoder.encode(anyString())).thenReturn("HASH");
+        when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        var request = new CriarUsuarioRequest("Ana", "ana@cahosp.local", Perfil.OPERADOR, "senha1234", unidadeId);
+        service.criar(request);
+
+        ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+        verify(usuarioRepository).save(captor.capture());
+        assertThat(captor.getValue().getUnidade()).isSameAs(unidade);
+    }
+
+    @Test
+    @DisplayName("criar com unidadeId inexistente lanca RecursoNaoEncontradoException")
+    void criarComUnidadeInexistente() {
+        UUID unidadeId = UUID.randomUUID();
+        when(usuarioRepository.existsByEmailIgnoreCase(anyString())).thenReturn(false);
+        when(unidadeRepository.findById(unidadeId)).thenReturn(Optional.empty());
+
+        var request = new CriarUsuarioRequest("Ana", "ana@cahosp.local", Perfil.OPERADOR, "senha1234", unidadeId);
+
+        assertThatThrownBy(() -> service.criar(request))
+                .isInstanceOf(RecursoNaoEncontradoException.class);
+        verify(usuarioRepository, never()).save(any());
     }
 
     @Test
@@ -76,7 +114,7 @@ class UsuarioAdminServiceTest {
     void atualizarInexistente() {
         UUID id = UUID.randomUUID();
         when(usuarioRepository.findById(id)).thenReturn(Optional.empty());
-        var request = new AtualizarUsuarioRequest("Novo", "novo@cahosp.local", Perfil.TI);
+        var request = new AtualizarUsuarioRequest("Novo", "novo@cahosp.local", Perfil.TI, null);
 
         assertThatThrownBy(() -> service.atualizar(id, request))
                 .isInstanceOf(RecursoNaoEncontradoException.class);

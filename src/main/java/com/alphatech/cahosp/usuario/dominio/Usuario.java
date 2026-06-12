@@ -1,11 +1,15 @@
 package com.alphatech.cahosp.usuario.dominio;
 
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import org.springframework.data.annotation.CreatedDate;
@@ -18,7 +22,8 @@ import java.util.UUID;
 /**
  * Usuario do sistema. Login por e-mail; senha armazenada como hash BCrypt. RF-ADM / RF-SEG.
  *
- * <p>O vinculo com {@code Unidade} (FK) entra na Fase 3, quando a entidade Unidade existir.
+ * <p>Vinculo <strong>opcional</strong> com a {@link Unidade} de lotacao (FK anulavel): um usuario
+ * pode nao estar lotado em nenhuma unidade (ex.: equipe central de TI).
  */
 @Entity
 @Table(name = "usuario")
@@ -44,6 +49,11 @@ public class Usuario {
 
     @Column(nullable = false)
     private boolean ativo = true;
+
+    /** Unidade de lotacao (opcional). RF-ADM-01. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unidade_id")
+    private Unidade unidade;
 
     @Column(name = "ultimo_acesso")
     private Instant ultimoAcesso;
@@ -122,6 +132,14 @@ public class Usuario {
 
     public void setPerfil(Perfil perfil) {
         this.perfil = perfil;
+    }
+
+    public Unidade getUnidade() {
+        return unidade;
+    }
+
+    public void setUnidade(Unidade unidade) {
+        this.unidade = unidade;
     }
 
     public boolean isAtivo() {
