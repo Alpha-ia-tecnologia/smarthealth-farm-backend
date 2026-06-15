@@ -69,14 +69,35 @@ public class AlertaService {
                 ativos, abertos, emTratamento, desabastecimento, vencimento, criticos, resolvidos, total);
     }
 
-    /** Aplica uma transicao de status no tratamento de um alerta (RF-ALE-05). */
+    /**
+     * Aplica uma transicao de status no tratamento de um alerta (RF-ALE-05) e registra a acao na
+     * trilha de auditoria (RF-SEG-02): fica gravado <em>quem</em> tratou/resolveu o alerta e quando.
+     * So audita quando ha mudanca efetiva (a transicao para o mesmo status e idempotente).
+     */
     @Transactional
     public AlertaResponse atualizarStatus(UUID id, StatusAlerta novoStatus) {
         Alerta alerta = alertaRepository.findComRelacionamentos(id)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Alerta nao encontrado: " + id + "."));
+        StatusAlerta anterior = alerta.getStatus();
         alerta.mudarStatusPara(novoStatus);
-        return AlertaResponse.de(alertaRepository.save(alerta));
+        AlertaResponse resposta = AlertaResponse.de(alertaRepository.save(alerta));
+        if (novoStatus != anterior) {
+            auditoria.registrar(
+                    CategoriaAuditoria.TRATAR_ALERTA,
+                    acaoTratamento(novoStatus),
+                    "alerta:" + id,
+                    CategoriaAuditoria.TRATAR_ALERTA.baseLegalPadrao(),
+                    false);
+        }
+        return resposta;
+    }
+
+    /** Frase legivel da acao de tratamento, conforme o status alcancado (RF-ALE-05). */
+    private static String acaoTratamento(StatusAlerta novoStatus) {
+        return novoStatus == StatusAlerta.RESOLVIDO
+                ? "Resolveu alerta"
+                : "Marcou alerta como " + novoStatus.rotulo();
     }
 
     /** Dispara o motor de geracao por regra (RF-ALE-01/02 — acao de Gestor). */

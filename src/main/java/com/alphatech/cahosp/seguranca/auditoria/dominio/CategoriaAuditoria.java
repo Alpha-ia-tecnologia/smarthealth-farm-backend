@@ -24,6 +24,8 @@ public enum CategoriaAuditoria {
             "Execução de contrato", true),
     GERAR_ALERTAS("Geração de alertas", "Regenerou alertas pelo motor de regras",
             "Execução de contrato", false),
+    TRATAR_ALERTA("Tratamento de alerta", "Tratou alerta",
+            "Execução de contrato", false),
     ALTERAR_LIMIAR_ALERTA("Alteração de limiar de alerta", "Alterou limiar de alerta",
             "Execução de contrato", false),
     EXPORTAR_RELATORIO("Exportação de relatório", "Exportou relatório",

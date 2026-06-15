@@ -2,6 +2,8 @@ package com.alphatech.cahosp.alerta;
 
 import com.alphatech.cahosp.alerta.dominio.Alerta;
 import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
+import com.alphatech.cahosp.seguranca.auditoria.LogAuditoriaRepository;
+import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
@@ -45,6 +47,7 @@ class AlertaIT extends BaseIntegracaoPostgres {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private AlertaRepository alertaRepository;
+    @Autowired private LogAuditoriaRepository logAuditoriaRepository;
 
     private String tokenGestor;
     private String tokenOperador;
@@ -277,6 +280,26 @@ class AlertaIT extends BaseIntegracaoPostgres {
                         .content("{ \"status\": \"Em tratamento\" }"))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(jsonPath("$.codigo").value("REGRA_NEGOCIO"));
+    }
+
+    @Test
+    @DisplayName("Tratar um alerta registra na trilha de auditoria quem fez a acao (RF-SEG-02)")
+    void tratamentoEhAuditado() throws Exception {
+        mvc.perform(patch("/alertas/" + alertaAbertoId + "/status")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"status\": \"Em tratamento\" }"))
+                .andExpect(status().isOk());
+
+        var log = logAuditoriaRepository.findAll().stream()
+                .filter(l -> l.getCategoria() == CategoriaAuditoria.TRATAR_ALERTA)
+                .filter(l -> ("alerta:" + alertaAbertoId).equals(l.getRecurso()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Esperava um log de auditoria do tratamento."));
+
+        org.assertj.core.api.Assertions.assertThat(log.getUsuarioNome()).isEqualTo("Operador Ale");
+        org.assertj.core.api.Assertions.assertThat(log.getPerfil()).isEqualTo(Perfil.OPERADOR);
+        org.assertj.core.api.Assertions.assertThat(log.getAcao()).isEqualTo("Marcou alerta como Em tratamento");
     }
 
     @Test
