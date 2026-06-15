@@ -161,6 +161,26 @@ cp .env.example .env        # preencha DB_*, JWT_SECRET, etc.
 O schema é aplicado automaticamente pelo **Flyway** no startup. Nenhuma alteração de schema é
 feita à mão: cada mudança é uma migration `V<n>__*.sql`.
 
+### Deploy com Docker (EasyPanel)
+
+A imagem de produção é construída pelo [`Dockerfile`](Dockerfile) multi-stage (build com Maven/JDK 21
+→ runtime em JRE 21 enxuto, usuário não-root). **Os testes não rodam no build da imagem** — os `*IT`
+usam Testcontainers/Docker e ficam no CI (`./mvnw verify`); o [`docker-compose.yml`](docker-compose.yml)
+existe só para subir um PostgreSQL local de apoio aos testes.
+
+No EasyPanel, crie um serviço **App** apontando para este repositório com build via **Dockerfile** e
+**porta 3002**. Injete as variáveis de ambiente (ver [`.env.example`](.env.example)) — no mínimo:
+`DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `ADMIN_SENHA` e `CORS_ALLOWED_ORIGINS`.
+
+```bash
+# build e run local da imagem (equivalente ao EasyPanel)
+docker build -t cahosp-backend .
+docker run -p 3002:3002 --env-file .env cahosp-backend
+```
+
+- Health check (usado pelo container e pelo painel): `GET /api/actuator/health`
+- `JAVA_OPTS` pode ser usado para passar flags da JVM (ex.: `-Xmx512m`).
+
 ---
 
 ## Convenção de resposta

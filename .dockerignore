@@ -1,0 +1,46 @@
+# Contexto de build enxuto — nao envie nada que a imagem nao precisa.
+
+# Build / artefatos
+target/
+*.jar
+*.war
+*.class
+schema-export.sql
+
+# Segredos e ambiente (injetados pelo EasyPanel em runtime)
+.env
+*.env.local
+.env.example
+
+# Git / IDE
+.git/
+.gitignore
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+nbproject/
+
+# Docs / memoria do agente — nao entram na imagem
+docs/
+memory/
+.claude/
+CLAUDE.md
+README.md
+
+# Compose (so para testes locais, nao para a imagem)
+docker-compose.yml
+docker-compose*.yml
+
+# Maven wrapper (a imagem usa a imagem oficial do Maven, nao o wrapper)
+mvnw
+mvnw.cmd
+.mvn/
+
+# Logs / SO
+*.log
+logs/
+.DS_Store
+Thumbs.db
