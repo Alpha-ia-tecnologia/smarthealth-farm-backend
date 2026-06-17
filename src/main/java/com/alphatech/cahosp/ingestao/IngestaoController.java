@@ -2,7 +2,7 @@ package com.alphatech.cahosp.ingestao;
 
 import com.alphatech.cahosp.comum.ApiResponse;
 import com.alphatech.cahosp.ingestao.dto.FonteDadoResponse;
-import com.alphatech.cahosp.ingestao.dto.QualidadeFamiliaResponse;
+import com.alphatech.cahosp.ingestao.dto.QualidadeCategoriaResponse;
 import com.alphatech.cahosp.ingestao.dto.ResumoIngestaoResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -35,8 +35,8 @@ public class IngestaoController {
     }
 
     @GetMapping("/qualidade")
-    @Operation(summary = "Lista maturidade e qualidade por familia terapeutica")
-    public ResponseEntity<ApiResponse<List<QualidadeFamiliaResponse>>> listarQualidade() {
+    @Operation(summary = "Lista maturidade e qualidade por categoria")
+    public ResponseEntity<ApiResponse<List<QualidadeCategoriaResponse>>> listarQualidade() {
         return ResponseEntity.ok(ApiResponse.lista(ingestaoService.listarQualidade()));
     }
 

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Filtro dinamico de posicoes de estoque (unidade, medicamento, busca e <strong>status</strong>).
+ * Filtro dinamico de posicoes de estoque (unidade, insumo, busca e <strong>status</strong>).
  *
  * <p>O {@code status} (ok/atencao/critico) e <em>derivado</em> de {@code quantidade} vs.
  * {@code nivelCritico} (mesma regra de {@link CalculadoraEstoque}). Empurrar essa regra para a
@@ -24,7 +24,7 @@ final class EspecificacoesPosicao {
     private EspecificacoesPosicao() {
     }
 
-    static Specification<PosicaoEstoque> comFiltros(UUID unidadeId, UUID medicamentoId,
+    static Specification<PosicaoEstoque> comFiltros(UUID unidadeId, UUID insumoId,
                                                     StatusEstoque status, String busca) {
         return (root, query, cb) -> {
             List<Predicate> predicados = new ArrayList<>();
@@ -32,13 +32,13 @@ final class EspecificacoesPosicao {
             if (unidadeId != null) {
                 predicados.add(cb.equal(root.get("unidade").get("id"), unidadeId));
             }
-            if (medicamentoId != null) {
-                predicados.add(cb.equal(root.get("medicamento").get("id"), medicamentoId));
+            if (insumoId != null) {
+                predicados.add(cb.equal(root.get("insumo").get("id"), insumoId));
             }
             if (busca != null && !busca.isBlank()) {
                 String termo = "%" + busca.trim().toLowerCase() + "%";
                 predicados.add(cb.or(
-                        cb.like(cb.lower(root.get("medicamento").get("nome")), termo),
+                        cb.like(cb.lower(root.get("insumo").get("nome")), termo),
                         cb.like(cb.lower(root.get("unidade").get("nome")), termo),
                         cb.like(cb.lower(root.get("unidade").get("sigla")), termo)));
             }

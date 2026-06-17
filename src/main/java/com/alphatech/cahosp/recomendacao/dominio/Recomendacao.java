@@ -1,7 +1,7 @@
 package com.alphatech.cahosp.recomendacao.dominio;
 
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -49,8 +49,8 @@ public class Recomendacao {
     private TipoRecomendacao tipo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_destino_id", nullable = false)
@@ -94,11 +94,11 @@ public class Recomendacao {
         // JPA
     }
 
-    public Recomendacao(TipoRecomendacao tipo, Medicamento medicamento, Unidade unidadeDestino,
+    public Recomendacao(TipoRecomendacao tipo, Insumo insumo, Unidade unidadeDestino,
                         Unidade unidadeOrigem, int quantidade, String justificativa,
                         OrigemMotor origemMotor, Prioridade prioridade, BigDecimal economiaEstimada) {
         this.tipo = tipo;
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidadeDestino = unidadeDestino;
         this.unidadeOrigem = unidadeOrigem;
         this.quantidade = quantidade;
@@ -147,18 +147,18 @@ public class Recomendacao {
     }
 
     /**
-     * Edita uma recomendacao ainda {@code PENDENTE} (ajuste manual de uma sugestao): medicamento,
+     * Edita uma recomendacao ainda {@code PENDENTE} (ajuste manual de uma sugestao): insumo,
      * unidades, quantidade e economia recalculada. O {@link #tipo} nao muda; quem chama valida a
      * coerencia origem/destino conforme o tipo.
      */
-    public void editar(Medicamento medicamento, Unidade unidadeDestino, Unidade unidadeOrigem,
+    public void editar(Insumo insumo, Unidade unidadeDestino, Unidade unidadeOrigem,
                        int quantidade, BigDecimal economiaEstimada) {
         if (status != StatusRecomendacao.PENDENTE) {
             throw new RegraNegocioException(
                     "Apenas recomendacoes pendentes podem ser editadas (status atual: "
                             + status.rotulo() + ").");
         }
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidadeDestino = unidadeDestino;
         this.unidadeOrigem = unidadeOrigem;
         this.quantidade = quantidade;
@@ -173,8 +173,8 @@ public class Recomendacao {
         return tipo;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidadeDestino() {

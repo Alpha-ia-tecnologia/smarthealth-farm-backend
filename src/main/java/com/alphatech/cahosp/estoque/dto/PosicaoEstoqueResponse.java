@@ -10,9 +10,9 @@ import java.util.UUID;
  */
 public record PosicaoEstoqueResponse(
         UUID id,
-        UUID medicamentoId,
-        String medicamentoCodigo,
-        String medicamentoNome,
+        UUID insumoId,
+        String insumoCodigo,
+        String insumoNome,
         UUID unidadeId,
         String unidadeSigla,
         String unidadeNome,
@@ -27,9 +27,9 @@ public record PosicaoEstoqueResponse(
     public static PosicaoEstoqueResponse de(PosicaoEstoque p, StatusEstoque status) {
         return new PosicaoEstoqueResponse(
                 p.getId(),
-                p.getMedicamento().getId(),
-                p.getMedicamento().getCodigo(),
-                p.getMedicamento().getNome(),
+                p.getInsumo().getId(),
+                p.getInsumo().getCodigo(),
+                p.getInsumo().getNome(),
                 p.getUnidade().getId(),
                 p.getUnidade().getSigla(),
                 p.getUnidade().getNome(),

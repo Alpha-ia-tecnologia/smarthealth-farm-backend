@@ -8,7 +8,7 @@ Este é o backend **novo, escrito do zero em Java**, da plataforma **Smart Healt
 **gestão preditiva da cadeia farmacêutica** da Central de Abastecimento Hospitalar
 (**CAHOSP / EMSERH-MA**). A plataforma cobre os **62 requisitos funcionais** (`RF-*`)
 especificados no documento *Requisitos Funcionais Smart Health* (Edital FAPEMA GovIA —
-Desafio Tecnológico 2): previsão de demanda de medicamentos, controle de estoque por lote,
+Desafio Tecnológico 2): previsão de demanda de insumos, controle de estoque por lote,
 alertas de desabastecimento e vencimento, recomendações de reposição/redistribuição entre
 unidades, indicadores de projeto, ingestão/qualidade de dados, integração com sistemas EMSERH
 e segurança/LGPD.
@@ -40,20 +40,20 @@ limpa, guiada pelo frontend.
 ## Princípios inegociáveis
 
 1. **Idioma: português** em tudo — entidades, atributos, pacotes de domínio, rotas
-   (`/api/medicamentos`, `/api/estoque`, `/api/previsoes`), mensagens de erro e validação.
+   (`/api/insumos`, `/api/estoque`, `/api/previsoes`), mensagens de erro e validação.
    (Termos técnicos universais — `id`, `status`, `email` — podem ficar como são.)
 2. **IDs: `UUID` em TODAS as entidades** (`@Id UUID`, gerado pela aplicação). Nada de `Long`
    autoincrement nem IDs String atribuídos na mão. (No front os ids são strings tipo `m-001`/
    `u-cahosp`; isso é detalhe de mock — no back use UUID e, quando útil, um **código de negócio**
-   legível à parte, ex.: `codigo` do medicamento.)
+   legível à parte, ex.: `codigo` do insumo.)
 3. **Tipos corretos**: datas/horas são `LocalDate` / `LocalDateTime` / `Instant` — **nunca**
    `String` (o mock usa ISO string; no back tipe). Dinheiro/valores (`economiaEstimada`,
    custos, R$) são `BigDecimal`. Percentuais e métricas numéricas tipados. Enums para todo
-   conjunto fechado (status, severidade, prioridade, família terapêutica, perfil, modo de
+   conjunto fechado (status, severidade, prioridade, categoria de insumo, perfil, modo de
    integração, papel de IA, tipo de movimentação, drift…).
 4. **Segurança real**: Spring Security + **JWT** de verdade, senha com **BCrypt**, RBAC por
    perfil (`Operador` / `Gestor` / `TI`). Nada de token fake.
-5. **Entidades centrais `Medicamento` e `Unidade`**: referenciadas por **FK** em todos os
+5. **Entidades centrais `Insumo` e `Unidade`**: referenciadas por **FK** em todos os
    domínios (estoque, lote, movimentação, previsão, alerta, recomendação…). **Não** repetir
    nome/sigla soltos como String — sempre relacionamento.
 6. **SOLID e arquitetura limpa** (ver seção dedicada abaixo): responsabilidade única por classe,
@@ -145,14 +145,14 @@ Um pacote por domínio. As entidades saem direto de `../smarthealth-farm/src/typ
 | Domínio (pacote) | Entidades principais | Rotas `/api` | RF |
 |---|---|---|---|
 | `unidade` | `Unidade` (inclui a CAHOSP central + unidades atendidas; `porte`, `conectividade`, `leitos`, `perfilDemografico`) | `/unidades` | RF-DAD-06 |
-| `medicamento` | `Medicamento` (`familia`, `criticidade`, `essencial`, `apresentacao`, `unidadeMedida`) | `/medicamentos` | base do catálogo |
+| `insumo` | `Insumo` (`categoria`, `criticidade`, `essencial`, `apresentacao`, `unidadeMedida`) | `/insumos` | base do catálogo |
 | `usuario` | `Usuario` (`perfil` Operador/Gestor/TI, `unidade` FK, `ativo`), auth + admin | `/auth`, `/admin/usuarios` | RF-ADM, RF-SEG |
 | `estoque` | `PosicaoEstoque` (derivada), `Lote` (validade, fabricante), `Movimentacao` (Entrada/Saída/Transferência/Ajuste) | `/estoque`, `/lotes`, `/movimentacoes` | RF-EST-01..06 |
 | `previsao` | `Previsao` (`mape`, `modelo`, `versaoModelo`, `drift`) + `PontoSerie` (realizado/previsto/limites) | `/previsoes` | RF-PRV-01..09 |
 | `alerta` | `Alerta` (`Desabastecimento`/`Vencimento`, `severidade`, `status`, `destinatarios`) | `/alertas` | RF-ALE-01..05 |
 | `recomendacao` | `Recomendacao` (`Reposição`/`Redistribuição`, `origemMotor`, `prioridade`, `economiaEstimada` R$, `status`) | `/recomendacoes` | RF-REC-01..05 |
 | `indicador` | `IndicadorMeta` (`baseline`/`atual`/`meta`, `historico`) | `/indicadores` | RF-IND-01..06 |
-| `ingestao` | `FonteDado` (status/qualidade/procedência), `QualidadeFamilia` | `/ingestao/fontes`, `/ingestao/qualidade` | RF-DAD-01..08 |
+| `ingestao` | `FonteDado` (status/qualidade/procedência), `QualidadeCategoria` | `/ingestao/fontes`, `/ingestao/qualidade` | RF-DAD-01..08 |
 | `integracao` | `IntegracaoAPI` (modo Online/Offline-buffer/Reconciliando, latência, buffer), `ProvedorIA` | `/integracoes` | RF-INT-01..06 |
 | `seguranca` | `LogAuditoria` (ação, recurso, `baseLegal`, `assistidoPorIA`, ip) | `/seguranca/auditoria` | RF-SEG-01..06 |
 | `ia` | gateway de IA (proxy + anonimização + modo demo) | `/ia/chat` | RF-INT, RF-SEG-04 |
@@ -257,7 +257,7 @@ Um envelope só, via `comum/ApiResponse<T>`:
   `@Table`/`@Column` quando útil. Campos obrigatórios `nullable=false`. Relacionamentos por FK
   (`@ManyToOne`/`@OneToMany`), nunca String solta para referenciar outra entidade.
 - **Enums** (`@Enumerated(EnumType.STRING)`) para conjuntos fechados. Mapeie fielmente os do front:
-  `FamiliaTerapeutica`, `Criticidade`, `Porte`, `Conectividade`, `Prioridade`, `Perfil`,
+  `CategoriaInsumo`, `Criticidade`, `Porte`, `Conectividade`, `Prioridade`, `Perfil`,
   `TipoMovimentacao`, `TipoAlerta`, `Severidade`, `StatusAlerta`, `TipoRecomendacao`, `OrigemMotor`,
   `Drift`, `ModoIntegracao`, `PapelIa`, etc.
 - **DTOs**: `record` Java. Validação com `jakarta.validation` (`@NotBlank`, `@NotNull`, `@Positive`…).
@@ -334,7 +334,7 @@ O desenvolvimento é guiado pelo frontend, **na ordem de dependência** (entidad
 telas que as consomem). Ordem sugerida (ver tabela de domínios e o `README.md`):
 
 1. **Base/segurança**: `comum` (envelope + handler) → `seguranca` (JWT/RBAC) → `usuario` (auth/admin).
-2. **Catálogo**: `unidade` → `medicamento`.
+2. **Catálogo**: `unidade` → `insumo`.
 3. **Operação**: `estoque` (lote/movimentação/posição) → `previsao` → `alerta` → `recomendacao`.
 4. **Governança/visão**: `indicador` → `painel` → `ingestao` → `integracao` → `ia` → `seguranca/auditoria`.
 
@@ -361,7 +361,7 @@ modelar, para a entidade já nascer completa e evitar retrabalho.
 |---|---|
 | Modelo de domínio (entidades/campos/enums) | `src/types/index.ts` |
 | Regras de negócio / derivações / agregações | `src/data/index.ts` |
-| Catálogos base (unidades, medicamentos) | `src/data/units.ts`, `src/data/medicines.ts` |
+| Catálogos base (unidades, insumos) | `src/data/units.ts`, `src/data/medicines.ts` |
 | Operações por tela | `src/pages/*.tsx` |
 | Mapa de módulos ↔ `RF-*` | `src/lib/nav.ts`, `README.md` |
 | Status/format/utilitários (pt-BR) | `src/lib/status.ts`, `src/lib/format.ts` |

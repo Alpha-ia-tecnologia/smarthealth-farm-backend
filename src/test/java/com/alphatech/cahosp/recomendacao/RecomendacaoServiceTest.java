@@ -1,8 +1,8 @@
 package com.alphatech.cahosp.recomendacao;
 
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.recomendacao.dominio.OrigemMotor;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
@@ -46,7 +46,7 @@ class RecomendacaoServiceTest {
 
     @Mock private RecomendacaoRepository recomendacaoRepository;
     @Mock private GeradorRecomendacao geradorRecomendacao;
-    @Mock private MedicamentoRepository medicamentoRepository;
+    @Mock private InsumoRepository insumoRepository;
     @Mock private UnidadeRepository unidadeRepository;
     @Mock private RegistradorAuditoria auditoria;
 
@@ -55,11 +55,11 @@ class RecomendacaoServiceTest {
     @BeforeEach
     void init() {
         service = new RecomendacaoService(recomendacaoRepository, geradorRecomendacao,
-                new CalculadoraRecomendacao(), medicamentoRepository, unidadeRepository, auditoria);
+                new CalculadoraRecomendacao(), insumoRepository, unidadeRepository, auditoria);
     }
 
     private Recomendacao redistribuicaoPendente() {
-        return new Recomendacao(TipoRecomendacao.REDISTRIBUICAO, mock(Medicamento.class),
+        return new Recomendacao(TipoRecomendacao.REDISTRIBUICAO, mock(Insumo.class),
                 mock(Unidade.class), mock(Unidade.class), 20, "j", OrigemMotor.MANUAL,
                 Prioridade.IMPORTANTE, new BigDecimal("100.00"));
     }
@@ -70,7 +70,7 @@ class RecomendacaoServiceTest {
         UUID medId = UUID.randomUUID();
         UUID origemId = UUID.randomUUID();
         UUID destinoId = UUID.randomUUID();
-        when(medicamentoRepository.findById(medId)).thenReturn(Optional.of(mock(Medicamento.class)));
+        when(insumoRepository.findById(medId)).thenReturn(Optional.of(mock(Insumo.class)));
         when(unidadeRepository.findById(origemId)).thenReturn(Optional.of(mock(Unidade.class)));
         when(unidadeRepository.findById(destinoId)).thenReturn(Optional.of(mock(Unidade.class)));
         when(recomendacaoRepository.save(any(Recomendacao.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -108,7 +108,7 @@ class RecomendacaoServiceTest {
         UUID origemId = UUID.randomUUID();
         UUID destinoId = UUID.randomUUID();
         when(recomendacaoRepository.findComRelacionamentos(id)).thenReturn(Optional.of(rec));
-        when(medicamentoRepository.findById(medId)).thenReturn(Optional.of(mock(Medicamento.class)));
+        when(insumoRepository.findById(medId)).thenReturn(Optional.of(mock(Insumo.class)));
         when(unidadeRepository.findById(origemId)).thenReturn(Optional.of(mock(Unidade.class)));
         when(unidadeRepository.findById(destinoId)).thenReturn(Optional.of(mock(Unidade.class)));
         when(recomendacaoRepository.save(any(Recomendacao.class))).thenAnswer(inv -> inv.getArgument(0));

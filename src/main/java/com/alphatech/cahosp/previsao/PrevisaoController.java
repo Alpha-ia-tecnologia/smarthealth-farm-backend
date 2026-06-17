@@ -38,32 +38,32 @@ public class PrevisaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista previsoes, paginadas, com filtros (unidade, medicamento, drift, busca)")
+    @Operation(summary = "Lista previsoes, paginadas, com filtros (unidade, insumo, drift, busca)")
     public ResponseEntity<ApiResponse<List<PrevisaoResumoResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) Drift drift,
             @RequestParam(required = false) String busca,
-            @PageableDefault(size = 10, sort = "medicamento.nome") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "insumo.nome") Pageable pageable) {
         Page<PrevisaoResumoResponse> pagina = previsaoService.listar(
-                unidadeId, medicamentoId, drift, busca, pageable);
+                unidadeId, insumoId, drift, busca, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do painel de previsao (MAPE medio, criticos na meta, drift); filtros por unidade/medicamento")
+    @Operation(summary = "KPIs do painel de previsao (MAPE medio, criticos na meta, drift); filtros por unidade/insumo")
     public ResponseEntity<ApiResponse<PainelPrevisaoResponse>> resumo(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId) {
-        return ResponseEntity.ok(ApiResponse.ok(previsaoService.resumo(unidadeId, medicamentoId)));
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(previsaoService.resumo(unidadeId, insumoId)));
     }
 
-    @GetMapping("/{medicamentoId}/{unidadeId}")
+    @GetMapping("/{insumoId}/{unidadeId}")
     @Operation(summary = "Detalha uma previsao com a serie temporal completa")
     public ResponseEntity<ApiResponse<PrevisaoDetalheResponse>> detalhar(
-            @PathVariable UUID medicamentoId,
+            @PathVariable UUID insumoId,
             @PathVariable UUID unidadeId) {
-        return ResponseEntity.ok(ApiResponse.ok(previsaoService.detalhar(medicamentoId, unidadeId)));
+        return ResponseEntity.ok(ApiResponse.ok(previsaoService.detalhar(insumoId, unidadeId)));
     }
 
     @PostMapping("/recalibrar")

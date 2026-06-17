@@ -1,4 +1,4 @@
-package com.alphatech.cahosp.medicamento.dominio;
+package com.alphatech.cahosp.insumo.dominio;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,17 +16,17 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Medicamento ou insumo do catalogo da CAHOSP. Modelagem fiel ao tipo {@code Medicamento}
+ * Insumo do catalogo da CAHOSP. Modelagem fiel ao tipo {@code Insumo}
  * do front (src/types/index.ts).
  *
- * <p>{@link #codigo} e unico e funciona como codigo de negocio legivel (ex.: {@code MED-001}):
+ * <p>{@link #codigo} e unico e funciona como codigo de negocio legivel (ex.: {@code INS-001}):
  * estavel para integracao com sistemas externos (EMSERH) e usado pelo
- * {@link com.alphatech.cahosp.medicamento.MedicamentoSeeder} para garantir idempotencia.
+ * {@link com.alphatech.cahosp.insumo.InsumoSeeder} para garantir idempotencia.
  */
 @Entity
-@Table(name = "medicamento")
+@Table(name = "insumo")
 @EntityListeners(AuditingEntityListener.class)
-public class Medicamento {
+public class Insumo {
 
     @Id
     @Column(columnDefinition = "uuid")
@@ -43,7 +43,7 @@ public class Medicamento {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 40)
-    private FamiliaTerapeutica familia;
+    private CategoriaInsumo categoria;
 
     @Column(name = "unidade_medida", nullable = false, length = 20)
     private String unidadeMedida;
@@ -66,21 +66,21 @@ public class Medicamento {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
-    protected Medicamento() {
+    protected Insumo() {
         // JPA
     }
 
-    public Medicamento(String codigo,
+    public Insumo(String codigo,
                        String nome,
                        String apresentacao,
-                       FamiliaTerapeutica familia,
+                       CategoriaInsumo categoria,
                        String unidadeMedida,
                        Criticidade criticidade,
                        boolean essencial) {
         this.codigo = codigo;
         this.nome = nome;
         this.apresentacao = apresentacao;
-        this.familia = familia;
+        this.categoria = categoria;
         this.unidadeMedida = unidadeMedida;
         this.criticidade = criticidade;
         this.essencial = essencial;
@@ -130,12 +130,12 @@ public class Medicamento {
         this.apresentacao = apresentacao;
     }
 
-    public FamiliaTerapeutica getFamilia() {
-        return familia;
+    public CategoriaInsumo getCategoria() {
+        return categoria;
     }
 
-    public void setFamilia(FamiliaTerapeutica familia) {
-        this.familia = familia;
+    public void setCategoria(CategoriaInsumo categoria) {
+        this.categoria = categoria;
     }
 
     public String getUnidadeMedida() {

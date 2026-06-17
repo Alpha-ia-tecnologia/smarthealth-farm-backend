@@ -4,7 +4,7 @@ import com.alphatech.cahosp.estoque.CalculadoraEstoque;
 import com.alphatech.cahosp.estoque.PosicaoEstoqueRepository;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
 import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.recomendacao.dominio.OrigemMotor;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * estoque — espelhando o algoritmo do front (src/data/index.ts):
  *
  * <ul>
- *   <li><strong>Redistribuicao:</strong> para cada medicamento <em>essencial</em> com uma posicao
+ *   <li><strong>Redistribuicao:</strong> para cada insumo <em>essencial</em> com uma posicao
  *       em nivel critico e outra (em unidade diferente) com excedente, transfere para equilibrar.</li>
  *   <li><strong>Reposicao:</strong> para cada posicao fora do nivel ideal (critico/atencao),
  *       dimensiona a compra ate o estoque maximo.</li>
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  *
  * <p><strong>Idempotencia/regeneracao:</strong> as recomendacoes ainda {@code PENDENTE} sao
  * removidas e recalculadas; as ja {@code APROVADA}/{@code EXECUTADA} sao preservadas e nao
- * duplicadas (chave natural {tipo, medicamento, unidade destino}). Tudo nasce {@code PENDENTE}.
+ * duplicadas (chave natural {tipo, insumo, unidade destino}). Tudo nasce {@code PENDENTE}.
  */
 @Service
 public class GeradorRecomendacao {
@@ -85,26 +85,26 @@ public class GeradorRecomendacao {
                 reposicao, redistribuicao, renovadas, totalAtivo, mensagem);
     }
 
-    /** Chave natural de deduplicacao de uma recomendacao: {tipo, medicamento, unidade destino}. */
-    private static String chave(Object tipo, Object medicamentoId, Object unidadeDestinoId) {
-        return tipo + ":" + medicamentoId + ":" + unidadeDestinoId;
+    /** Chave natural de deduplicacao de uma recomendacao: {tipo, insumo, unidade destino}. */
+    private static String chave(Object tipo, Object insumoId, Object unidadeDestinoId) {
+        return tipo + ":" + insumoId + ":" + unidadeDestinoId;
     }
 
-    /** RF-REC-01: equilibra um medicamento essencial entre uma unidade em risco e outra com excedente. */
+    /** RF-REC-01: equilibra um insumo essencial entre uma unidade em risco e outra com excedente. */
     private long gerarRedistribuicao(List<PosicaoEstoque> posicoes, int[] seq,
                                      Set<String> existentes, List<Recomendacao> acc) {
-        Map<UUID, List<PosicaoEstoque>> porMedicamento = posicoes.stream()
-                .collect(Collectors.groupingBy(p -> p.getMedicamento().getId()));
+        Map<UUID, List<PosicaoEstoque>> porInsumo = posicoes.stream()
+                .collect(Collectors.groupingBy(p -> p.getInsumo().getId()));
 
-        List<Medicamento> essenciais = porMedicamento.values().stream()
-                .map(lista -> lista.get(0).getMedicamento())
-                .filter(Medicamento::isEssencial)
-                .sorted(Comparator.comparing(Medicamento::getCodigo))
+        List<Insumo> essenciais = porInsumo.values().stream()
+                .map(lista -> lista.get(0).getInsumo())
+                .filter(Insumo::isEssencial)
+                .sorted(Comparator.comparing(Insumo::getCodigo))
                 .toList();
 
         long gerados = 0;
-        for (Medicamento med : essenciais) {
-            List<PosicaoEstoque> posicoesMed = porMedicamento.get(med.getId());
+        for (Insumo med : essenciais) {
+            List<PosicaoEstoque> posicoesMed = porInsumo.get(med.getId());
             PosicaoEstoque destino = posicoesMed.stream()
                     .filter(p -> status(p) == StatusEstoque.CRITICO)
                     .min(Comparator.comparingInt(PosicaoEstoque::getQuantidade))
@@ -144,7 +144,7 @@ public class GeradorRecomendacao {
     private long gerarReposicao(List<PosicaoEstoque> posicoes, int[] seq,
                                 Set<String> existentes, List<Recomendacao> acc) {
         List<PosicaoEstoque> ordenadas = posicoes.stream()
-                .sorted(Comparator.comparing((PosicaoEstoque p) -> p.getMedicamento().getCodigo())
+                .sorted(Comparator.comparing((PosicaoEstoque p) -> p.getInsumo().getCodigo())
                         .thenComparing(p -> p.getUnidade().getSigla()))
                 .toList();
 
@@ -153,7 +153,7 @@ public class GeradorRecomendacao {
             if (status(pos) == StatusEstoque.OK) {
                 continue;
             }
-            Medicamento med = pos.getMedicamento();
+            Insumo med = pos.getInsumo();
             if (!existentes.add(chave(TipoRecomendacao.REPOSICAO, med.getId(), pos.getUnidade().getId()))) {
                 continue;
             }

@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.ingestao.dominio;
 
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
@@ -17,13 +17,13 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Indicadores de maturidade e qualidade da base historica por familia terapeutica (RF-DAD-04):
+ * Indicadores de maturidade e qualidade da base historica por categoria (RF-DAD-04):
  * completude, consistencia, granularidade e lacunas sinalizadas.
  */
 @Entity
-@Table(name = "qualidade_familia")
+@Table(name = "qualidade_categoria")
 @EntityListeners(AuditingEntityListener.class)
-public class QualidadeFamilia {
+public class QualidadeCategoria {
 
     @Id
     @Column(columnDefinition = "uuid")
@@ -31,7 +31,7 @@ public class QualidadeFamilia {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30, unique = true)
-    private FamiliaTerapeutica familia;
+    private CategoriaInsumo categoria;
 
     @Column(nullable = false)
     private int maturidade;
@@ -57,12 +57,12 @@ public class QualidadeFamilia {
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
-    protected QualidadeFamilia() {
+    protected QualidadeCategoria() {
     }
 
-    public QualidadeFamilia(FamiliaTerapeutica familia, int maturidade, int completude, int consistencia,
+    public QualidadeCategoria(CategoriaInsumo categoria, int maturidade, int completude, int consistencia,
                            GranularidadeDado granularidade, int lacunas) {
-        this.familia = familia;
+        this.categoria = categoria;
         this.maturidade = maturidade;
         this.completude = completude;
         this.consistencia = consistencia;
@@ -81,8 +81,8 @@ public class QualidadeFamilia {
         return id;
     }
 
-    public FamiliaTerapeutica getFamilia() {
-        return familia;
+    public CategoriaInsumo getCategoria() {
+        return categoria;
     }
 
     public int getMaturidade() {

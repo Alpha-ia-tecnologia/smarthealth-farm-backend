@@ -14,7 +14,7 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 - **Perfis (RBAC):** `Operador` (operação/leitura), `Gestor` (decisões), `TI` (administração).
 - **Regra geral de acesso:** ler = qualquer usuário logado; **escrever catálogo = TI**;
   **ações de decisão (aprovar/recalibrar/gerar) = Gestor**; **auditoria = Gestor/TI**.
-- Filtros por enum aceitam o rótulo em pt-BR (ex.: `?familia=Antibióticos`, `?status=Aberto`).
+- Filtros por enum aceitam o rótulo em pt-BR (ex.: `?categoria=Antibióticos`, `?status=Aberto`).
 
 ---
 
@@ -56,16 +56,16 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 | GET | `/unidades/{id}` | Detalha uma unidade. |
 | POST · PUT · PATCH `/status` | `/unidades` · `/{id}` · `/{id}/status` | Cria, atualiza e ativa/desativa **(TI)**. |
 
-## 4. Medicamentos — `/medicamentos`
-**Entidade:** `Medicamento` (código `MED-NNN`, família terapêutica, criticidade, essencial, ativo).
+## 4. Insumos — `/insumos`
+**Entidade:** `Insumo` (código `INS-NNN`, categoria, criticidade, essencial, ativo).
 **Para que serve:** catálogo de itens; base de estoque/previsão/alerta/recomendação.
 **Tela:** seletores em toda a app; cadastro na Administração.
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/medicamentos` | Lista; filtros `?familia=&criticidade=&essencial=&ativo=&busca=`. `?unidadeId=` restringe aos itens com posição de estoque na unidade (filtro dependente do front). |
-| GET | `/medicamentos/{id}` | Detalha um medicamento. |
-| POST · PUT · PATCH `/status` | `/medicamentos` · `/{id}` · `/{id}/status` | Cria, atualiza e ativa/desativa **(TI)**. |
+| GET | `/insumos` | Lista; filtros `?categoria=&criticidade=&essencial=&ativo=&busca=`. `?unidadeId=` restringe aos itens com posição de estoque na unidade (filtro dependente do front). |
+| GET | `/insumos/{id}` | Detalha um insumo. |
+| POST · PUT · PATCH `/status` | `/insumos` · `/{id}` · `/{id}/status` | Cria, atualiza e ativa/desativa **(TI)**. |
 
 ## 5. Estoque, Lotes e Movimentações — `/estoque`, `/lotes`, `/movimentacoes`
 **Entidades:** `PosicaoEstoque` (saldo + parâmetros), `Lote` (validade/fabricante),
@@ -75,9 +75,9 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/estoque` | Posições com status; filtros `?unidade=&medicamento=&status=&busca=`. |
-| GET | `/estoque/resumo` | KPIs: itens críticos, lotes a vencer, lead médio, total; filtros `?unidadeId=&medicamentoId=`. |
-| GET | `/estoque/{medicamentoId}/{unidadeId}` | Drill-down: lotes e movimentações recentes do item. |
+| GET | `/estoque` | Posições com status; filtros `?unidade=&insumo=&status=&busca=`. |
+| GET | `/estoque/resumo` | KPIs: itens críticos, lotes a vencer, lead médio, total; filtros `?unidadeId=&insumoId=`. |
+| GET | `/estoque/{insumoId}/{unidadeId}` | Drill-down: lotes e movimentações recentes do item. |
 | GET · POST | `/lotes` | Lista lotes (filtros) e cria lote (gera a Entrada inicial). |
 | GET · POST | `/movimentacoes` | Lista o livro-razão (filtros) e registra um lançamento (ajusta saldo). |
 
@@ -88,9 +88,9 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/previsoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `medicamento.nome`); filtros `?unidadeId=&medicamentoId=&drift=&busca=`. |
-| GET | `/previsoes/resumo` | KPIs: MAPE médio, críticos na meta, com drift; filtros `?unidadeId=&medicamentoId=`. |
-| GET | `/previsoes/{medicamentoId}/{unidadeId}` | Série temporal completa do item. |
+| GET | `/previsoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `insumo.nome`); filtros `?unidadeId=&insumoId=&drift=&busca=`. |
+| GET | `/previsoes/resumo` | KPIs: MAPE médio, críticos na meta, com drift; filtros `?unidadeId=&insumoId=`. |
+| GET | `/previsoes/{insumoId}/{unidadeId}` | Série temporal completa do item. |
 | POST | `/previsoes/recalibrar` | Recalibra os modelos e estabiliza drift **(Gestor)**. |
 
 ## 7. Alertas — `/alertas`
@@ -100,8 +100,8 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/alertas` | Lista **paginada** (`page`/`size`/`sort`); filtros `?tipo=&severidade=&status=&unidadeId=&medicamentoId=&busca=`. |
-| GET | `/alertas/resumo` | KPIs: abertos, desabastecimento, vencimento, tratados; filtros `?unidadeId=&medicamentoId=`. |
+| GET | `/alertas` | Lista **paginada** (`page`/`size`/`sort`); filtros `?tipo=&severidade=&status=&unidadeId=&insumoId=&busca=`. |
+| GET | `/alertas/resumo` | KPIs: abertos, desabastecimento, vencimento, tratados; filtros `?unidadeId=&insumoId=`. |
 | GET | `/alertas/limiares` | Configuração vigente dos limiares de disparo (RF-ALE-03). |
 | PUT | `/alertas/limiares` | Atualiza os limiares **(Gestor; auditado)** — o motor usa na próxima geração. |
 | PATCH | `/alertas/{id}/status` | Trata: Aberto → Em tratamento → Resolvido (terminal). |
@@ -114,8 +114,8 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 
 | Método | Rota | O que faz |
 |---|---|---|
-| GET | `/recomendacoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `economiaEstimada` desc); filtros `?tipo=&status=&origemMotor=&prioridade=&unidadeId=&medicamentoId=&busca=`. |
-| GET | `/recomendacoes/resumo` | KPIs: pendentes, economia potencial, geradas por IA, taxa de adesão; filtros `?unidadeId=&medicamentoId=`. |
+| GET | `/recomendacoes` | Lista **paginada** (`?page=&size=&sort=`, default 10/pág., sort `economiaEstimada` desc); filtros `?tipo=&status=&origemMotor=&prioridade=&unidadeId=&insumoId=&busca=`. |
+| GET | `/recomendacoes/resumo` | KPIs: pendentes, economia potencial, geradas por IA, taxa de adesão; filtros `?unidadeId=&insumoId=`. |
 | POST | `/recomendacoes/{id}/aprovar` | Aprova uma pendente **(Gestor)**. |
 | POST | `/recomendacoes/{id}/executar` | Marca uma aprovada como executada **(Gestor)**. |
 | POST | `/recomendacoes/gerar` | Regenera pelo motor **(Gestor)**. |
@@ -138,17 +138,17 @@ Para dúvidas, é só perguntar. Detalhes técnicos vivem no [`CLAUDE.md`](../CL
 | Método | Rota | O que faz |
 |---|---|---|
 | GET | `/painel` | Gerencial: totais da rede, cobertura, série agregada, alertas e recomendações. Filtro `?unidadeId=` reaplica em tudo **exceto** a cobertura por unidade (sempre da rede inteira). |
-| GET | `/painel/operacional` | Operacional: situação por unidade, fila de alertas e recomendações em aberto. Filtros `?unidadeId=&medicamentoId=`. |
+| GET | `/painel/operacional` | Operacional: situação por unidade, fila de alertas e recomendações em aberto. Filtros `?unidadeId=&insumoId=`. |
 
 ## 11. Ingestão de Dados — `/ingestao`
-**Entidades:** `FonteDado` (status/qualidade/procedência) e `QualidadeFamilia` (maturidade por família).
+**Entidades:** `FonteDado` (status/qualidade/procedência) e `QualidadeCategoria` (maturidade por categoria).
 **Para que serve:** mostrar de onde vêm os dados e a qualidade da base. Somente leitura.
 **Tela:** Ingestão de Dados (`/ingestao`).
 
 | Método | Rota | O que faz |
 |---|---|---|
 | GET | `/ingestao/fontes` | Fontes com status, volume, qualidade e procedência. |
-| GET | `/ingestao/qualidade` | Maturidade/qualidade por família terapêutica. |
+| GET | `/ingestao/qualidade` | Maturidade/qualidade por categoria de insumo. |
 | GET | `/ingestao/resumo` | KPIs: registros, fontes sincronizadas, qualidade média, LGPD. |
 
 ## 12. Integração EMSERH — `/integracoes`

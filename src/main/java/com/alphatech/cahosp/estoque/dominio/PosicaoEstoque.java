@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.estoque.dominio;
 
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Posicao de estoque de um medicamento em uma unidade (RF-EST-01/04/05). Guarda os parametros
+ * Posicao de estoque de um insumo em uma unidade (RF-EST-01/04/05). Guarda os parametros
  * de dimensionamento (nivel critico, estoque maximo, consumo medio, lead time) — derivados da
  * previsao nas fases seguintes (RF-PRV).
  *
@@ -30,8 +30,8 @@ import java.util.UUID;
  */
 @Entity
 @Table(name = "posicao_estoque",
-        uniqueConstraints = @UniqueConstraint(name = "uk_posicao_med_unidade",
-                columnNames = {"medicamento_id", "unidade_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_posicao_insumo_unidade",
+                columnNames = {"insumo_id", "unidade_id"}))
 @EntityListeners(AuditingEntityListener.class)
 public class PosicaoEstoque {
 
@@ -40,8 +40,8 @@ public class PosicaoEstoque {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_id", nullable = false)
@@ -74,10 +74,10 @@ public class PosicaoEstoque {
         // JPA
     }
 
-    public PosicaoEstoque(Medicamento medicamento, Unidade unidade, int quantidade,
+    public PosicaoEstoque(Insumo insumo, Unidade unidade, int quantidade,
                           int nivelCritico, int estoqueMaximo, int consumoMedioDiario,
                           int tempoMedioRessuprimentoDias) {
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidade = unidade;
         this.quantidade = quantidade;
         this.nivelCritico = nivelCritico;
@@ -102,8 +102,8 @@ public class PosicaoEstoque {
         return id;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidade() {

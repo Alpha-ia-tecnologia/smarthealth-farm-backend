@@ -1,10 +1,10 @@
 package com.alphatech.cahosp.previsao;
 
 import com.alphatech.cahosp.comum.GeradorPseudoaleatorio;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.previsao.dominio.Drift;
 import com.alphatech.cahosp.previsao.dominio.PontoSerie;
 import com.alphatech.cahosp.previsao.dominio.Previsao;
@@ -27,7 +27,7 @@ import java.util.Map;
  * Popula as previsoes de demanda no startup (idempotente), portando {@code gerarSerie} e a
  * geracao de previsoes do front (sazonalidade epidemiologica + PRNG determinístico). RF-PRV.
  *
- * <p>Roda apos catalogo/estoque ({@code @Order(40)}). Gera, por (medicamento, unidade atendida),
+ * <p>Roda apos catalogo/estoque ({@code @Order(40)}). Gera, por (insumo, unidade atendida),
  * 1 previsao com serie de 12 meses historicos (realizado x previsto) + 3 meses de previsao.
  */
 @Component
@@ -49,14 +49,14 @@ public class PrevisaoSeeder implements CommandLineRunner {
             Map.entry("2026-03", 1.38), Map.entry("2026-04", 1.22), Map.entry("2026-05", 1.05),
             Map.entry("2026-06", 0.95), Map.entry("2026-07", 0.92), Map.entry("2026-08", 0.95));
 
-    private final MedicamentoRepository medicamentoRepository;
+    private final InsumoRepository insumoRepository;
     private final UnidadeRepository unidadeRepository;
     private final PrevisaoRepository previsaoRepository;
 
-    public PrevisaoSeeder(MedicamentoRepository medicamentoRepository,
+    public PrevisaoSeeder(InsumoRepository insumoRepository,
                           UnidadeRepository unidadeRepository,
                           PrevisaoRepository previsaoRepository) {
-        this.medicamentoRepository = medicamentoRepository;
+        this.insumoRepository = insumoRepository;
         this.unidadeRepository = unidadeRepository;
         this.previsaoRepository = previsaoRepository;
     }
@@ -67,13 +67,13 @@ public class PrevisaoSeeder implements CommandLineRunner {
             log.info("Previsoes ja semeadas ({}). Nada a fazer.", previsaoRepository.count());
             return;
         }
-        List<Medicamento> medicamentos = medicamentoRepository.findAll();
+        List<Insumo> insumos = insumoRepository.findAll();
         List<Unidade> unidades = unidadeRepository.findAll().stream()
                 .filter(u -> !u.isHub())
                 .toList();
 
         int total = 0;
-        for (Medicamento med : medicamentos) {
+        for (Insumo med : insumos) {
             for (Unidade uni : unidades) {
                 previsaoRepository.save(gerarPrevisao(med, uni));
                 total++;
@@ -82,7 +82,7 @@ public class PrevisaoSeeder implements CommandLineRunner {
         log.info("Previsoes semeadas: {} ({} pontos de serie).", total, total * 15);
     }
 
-    private Previsao gerarPrevisao(Medicamento med, Unidade uni) {
+    private Previsao gerarPrevisao(Insumo med, Unidade uni) {
         GeradorPseudoaleatorio rp =
                 GeradorPseudoaleatorio.comSemente("prev" + med.getCodigo() + uni.getSigla());
         double mapeBase = med.getCriticidade() == Criticidade.ALTA
@@ -100,7 +100,7 @@ public class PrevisaoSeeder implements CommandLineRunner {
     }
 
     /** Serie temporal: 12 meses de historico (realizado x previsto) + 3 de previsao futura. */
-    private void gerarSerie(Previsao previsao, Medicamento med, Unidade uni) {
+    private void gerarSerie(Previsao previsao, Insumo med, Unidade uni) {
         GeradorPseudoaleatorio r =
                 GeradorPseudoaleatorio.comSemente(med.getCodigo() + uni.getSigla());
         double base = baseDemanda(med, uni);
@@ -131,12 +131,12 @@ public class PrevisaoSeeder implements CommandLineRunner {
         }
     }
 
-    /** Demanda mensal base por porte/familia/criticidade (espelha o front). */
-    private int baseDemanda(Medicamento med, Unidade uni) {
+    /** Demanda mensal base por porte/categoria/criticidade (espelha o front). */
+    private int baseDemanda(Insumo med, Unidade uni) {
         double porte = uni.getPorte() == Porte.GRANDE ? 1.0
                 : uni.getPorte() == Porte.MEDIO ? 0.55 : 0.3;
-        double base = med.getFamilia() == FamiliaTerapeutica.INSUMOS_MEDICOS ? 4200
-                : med.getFamilia() == FamiliaTerapeutica.SOROS_E_VACINAS ? 1800
+        double base = med.getCategoria() == CategoriaInsumo.INSUMOS_MEDICOS ? 4200
+                : med.getCategoria() == CategoriaInsumo.SOROS_E_VACINAS ? 1800
                 : med.getCriticidade() == Criticidade.ALTA ? 900 : 1400;
         return (int) Math.round(base * porte);
     }

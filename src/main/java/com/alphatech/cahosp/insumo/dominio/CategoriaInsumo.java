@@ -1,4 +1,4 @@
-package com.alphatech.cahosp.medicamento.dominio;
+package com.alphatech.cahosp.insumo.dominio;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -6,11 +6,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 /**
- * Familia terapeutica do medicamento. Mapeia 1:1 o tipo {@code FamiliaTerapeutica} do front
+ * Categoria do insumo. Mapeia 1:1 o tipo {@code CategoriaInsumo} do front
  * (src/types/index.ts). Filtro frequente em telas de previsao, estoque, alertas e relatorios —
- * por isso a coluna {@code familia} e indexada.
+ * por isso a coluna {@code categoria} e indexada.
  */
-public enum FamiliaTerapeutica {
+public enum CategoriaInsumo {
     ANTIBIOTICOS("Antibióticos"),
     ANALGESICOS("Analgésicos"),
     ANTIVIRAIS("Antivirais"),
@@ -22,7 +22,7 @@ public enum FamiliaTerapeutica {
 
     private final String rotulo;
 
-    FamiliaTerapeutica(String rotulo) {
+    CategoriaInsumo(String rotulo) {
         this.rotulo = rotulo;
     }
 
@@ -32,15 +32,15 @@ public enum FamiliaTerapeutica {
     }
 
     @JsonCreator
-    public static FamiliaTerapeutica fromJson(String valor) {
+    public static CategoriaInsumo fromJson(String valor) {
         if (valor == null || valor.isBlank()) {
-            throw new IllegalArgumentException("Familia terapeutica e obrigatoria.");
+            throw new IllegalArgumentException("Categoria e obrigatoria.");
         }
         String alvo = valor.trim();
         return Arrays.stream(values())
                 .filter(f -> f.name().equalsIgnoreCase(alvo) || f.rotulo.equalsIgnoreCase(alvo))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Familia terapeutica invalida: '" + valor + "'."));
+                        "Categoria invalida: '" + valor + "'."));
     }
 }

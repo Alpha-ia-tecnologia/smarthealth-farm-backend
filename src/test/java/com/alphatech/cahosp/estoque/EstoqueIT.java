@@ -2,7 +2,7 @@ package com.alphatech.cahosp.estoque;
 
 import com.alphatech.cahosp.estoque.dominio.Lote;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
+import com.alphatech.cahosp.insumo.InsumoRepository;
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
 import com.alphatech.cahosp.unidade.UnidadeRepository;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
@@ -45,7 +45,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private PasswordEncoder passwordEncoder;
-    @Autowired private MedicamentoRepository medicamentoRepository;
+    @Autowired private InsumoRepository insumoRepository;
     @Autowired private UnidadeRepository unidadeRepository;
     @Autowired private PosicaoEstoqueRepository posicaoRepository;
     @Autowired private LoteRepository loteRepository;
@@ -63,7 +63,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
         token = autenticar(email);
 
         PosicaoEstoque posicao = posicaoRepository.findAll().get(0);
-        medId = posicao.getMedicamento().getId();
+        medId = posicao.getInsumo().getId();
         uniId = posicao.getUnidade().getId();
 
         Lote lote = loteRepository.findAll().stream()
@@ -150,7 +150,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     void detalhar() throws Exception {
         mvc.perform(get("/estoque/" + medId + "/" + uniId).header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.posicao.medicamentoId").value(medId.toString()))
+                .andExpect(jsonPath("$.data.posicao.insumoId").value(medId.toString()))
                 .andExpect(jsonPath("$.data.lotes").isArray())
                 .andExpect(jsonPath("$.data.movimentacoes").isArray());
     }
@@ -179,7 +179,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
         mvc.perform(get("/lotes")
                         .param("validadeAteDias", "60")
                         .param("comSaldo", "true")
-                        .param("medicamentoId", medId.toString())
+                        .param("insumoId", medId.toString())
                         .header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -191,7 +191,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     void criarLote() throws Exception {
         String validade = LocalDate.now().plusMonths(8).toString();
         String corpo = """
-                {"medicamentoId":"%s","unidadeId":"%s","numeroLote":"LOTE-IT-%s",
+                {"insumoId":"%s","unidadeId":"%s","numeroLote":"LOTE-IT-%s",
                  "validade":"%s","quantidade":150,"fabricante":"Eurofarma",
                  "responsavel":"Teste","documento":"NF-IT"}
                 """.formatted(medId, uniId, UUID.randomUUID().toString().substring(0, 6), validade);
@@ -244,7 +244,7 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     @DisplayName("Lote com body invalido => 400 VALIDACAO")
     void bodyInvalido() throws Exception {
         String corpo = """
-                {"medicamentoId":"%s","unidadeId":"%s","numeroLote":"","validade":"2020-01-01",
+                {"insumoId":"%s","unidadeId":"%s","numeroLote":"","validade":"2020-01-01",
                  "quantidade":0,"fabricante":"","responsavel":"","documento":""}
                 """.formatted(medId, uniId);
         mvc.perform(post("/lotes").header(HttpHeaders.AUTHORIZATION, bearer())

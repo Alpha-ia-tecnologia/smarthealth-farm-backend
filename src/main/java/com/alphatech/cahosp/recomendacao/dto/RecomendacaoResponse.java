@@ -12,16 +12,16 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * Cartao de recomendacao do front (RF-REC-01/02/03/04): tipo, medicamento, origem -> destino,
+ * Cartao de recomendacao do front (RF-REC-01/02/03/04): tipo, insumo, origem -> destino,
  * quantidade, justificativa, motor, prioridade, economia estimada (R$) e status.
  * {@code unidadeOrigem*} so vem em redistribuicao.
  */
 public record RecomendacaoResponse(
         UUID id,
         TipoRecomendacao tipo,
-        UUID medicamentoId,
-        String medicamentoCodigo,
-        String medicamentoNome,
+        UUID insumoId,
+        String insumoCodigo,
+        String insumoNome,
         UUID unidadeDestinoId,
         String unidadeDestinoSigla,
         String unidadeDestinoNome,
@@ -42,9 +42,9 @@ public record RecomendacaoResponse(
         return new RecomendacaoResponse(
                 r.getId(),
                 r.getTipo(),
-                r.getMedicamento().getId(),
-                r.getMedicamento().getCodigo(),
-                r.getMedicamento().getNome(),
+                r.getInsumo().getId(),
+                r.getInsumo().getCodigo(),
+                r.getInsumo().getNome(),
                 r.getUnidadeDestino().getId(),
                 r.getUnidadeDestino().getSigla(),
                 r.getUnidadeDestino().getNome(),

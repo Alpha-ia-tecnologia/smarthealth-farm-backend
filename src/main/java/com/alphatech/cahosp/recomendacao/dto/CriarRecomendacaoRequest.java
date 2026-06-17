@@ -12,8 +12,8 @@ import java.util.UUID;
  * e {@code justificativa} são opcionais (o serviço aplica padrões).
  */
 public record CriarRecomendacaoRequest(
-        @NotNull(message = "O medicamento e obrigatorio.")
-        UUID medicamentoId,
+        @NotNull(message = "O insumo e obrigatorio.")
+        UUID insumoId,
         @NotNull(message = "A unidade de origem e obrigatoria.")
         UUID unidadeOrigemId,
         @NotNull(message = "A unidade de destino e obrigatoria.")

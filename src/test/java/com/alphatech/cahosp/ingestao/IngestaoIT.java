@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Ingestao fim-a-fim (RF-DAD) contra PostgreSQL real: fontes, qualidade por familia e KPIs.
+ * Ingestao fim-a-fim (RF-DAD) contra PostgreSQL real: fontes, qualidade por categoria e KPIs.
  * Modulo somente leitura.
  */
 @AutoConfigureMockMvc
@@ -88,12 +88,12 @@ class IngestaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
-    @DisplayName("Lista qualidade por familia terapeutica (8 familias)")
+    @DisplayName("Lista qualidade por categoria (8 categorias)")
     void listarQualidade() throws Exception {
         mvc.perform(get("/ingestao/qualidade").header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(8))
-                .andExpect(jsonPath("$.data[0].familia").exists())
+                .andExpect(jsonPath("$.data[0].categoria").exists())
                 .andExpect(jsonPath("$.data[0].maturidade").isNumber())
                 .andExpect(jsonPath("$.data[0].completude").isNumber())
                 .andExpect(jsonPath("$.data[0].consistencia").isNumber())

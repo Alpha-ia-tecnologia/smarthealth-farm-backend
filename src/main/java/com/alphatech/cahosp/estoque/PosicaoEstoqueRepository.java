@@ -19,61 +19,61 @@ import java.util.UUID;
 public interface PosicaoEstoqueRepository
         extends JpaRepository<PosicaoEstoque, UUID>, JpaSpecificationExecutor<PosicaoEstoque> {
 
-    Optional<PosicaoEstoque> findByMedicamentoIdAndUnidadeId(UUID medicamentoId, UUID unidadeId);
+    Optional<PosicaoEstoque> findByInsumoIdAndUnidadeId(UUID insumoId, UUID unidadeId);
 
     /**
-     * Todas as posicoes com medicamento e unidade ja carregados (fetch join) — para os motores de
+     * Todas as posicoes com insumo e unidade ja carregados (fetch join) — para os motores de
      * geracao (alerta/recomendacao) varrerem o estoque sem disparar N+1 nas relacoes lazy.
      */
-    @Query("SELECT p FROM PosicaoEstoque p JOIN FETCH p.medicamento JOIN FETCH p.unidade")
+    @Query("SELECT p FROM PosicaoEstoque p JOIN FETCH p.insumo JOIN FETCH p.unidade")
     List<PosicaoEstoque> findAllComRelacionamentos();
 
     /** Total de posicoes em nivel critico (saldo abaixo do nivel critico). RF-DASH/RF-EST-04. */
     @Query("SELECT COUNT(p) FROM PosicaoEstoque p WHERE p.quantidade < p.nivelCritico")
     long contarCriticos();
 
-    /** Variante de {@link #contarCriticos} com filtro opcional de unidade/medicamento (painel). */
+    /** Variante de {@link #contarCriticos} com filtro opcional de unidade/insumo (painel). */
     @Query("""
             SELECT COUNT(p) FROM PosicaoEstoque p
             WHERE p.quantidade < p.nivelCritico
               AND (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR p.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
             """)
     long contarCriticosFiltrado(@Param("unidadeId") UUID unidadeId,
-                                @Param("medicamentoId") UUID medicamentoId);
+                                @Param("insumoId") UUID insumoId);
 
-    /** Medicamentos distintos com posicao no escopo (filtros opcionais de unidade/medicamento). */
+    /** Insumos distintos com posicao no escopo (filtros opcionais de unidade/insumo). */
     @Query("""
-            SELECT COUNT(DISTINCT p.medicamento.id) FROM PosicaoEstoque p
+            SELECT COUNT(DISTINCT p.insumo.id) FROM PosicaoEstoque p
             WHERE (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR p.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
             """)
-    long contarMedicamentosDistintos(@Param("unidadeId") UUID unidadeId,
-                                     @Param("medicamentoId") UUID medicamentoId);
+    long contarInsumosDistintos(@Param("unidadeId") UUID unidadeId,
+                                     @Param("insumoId") UUID insumoId);
 
     /** Posicoes de uma unidade (resumo operacional do painel). RF-DASH-02. */
     List<PosicaoEstoque> findByUnidadeId(UUID unidadeId);
 
-    /** Posicoes com filtros opcionais de unidade/medicamento (KPIs do resumo de estoque filtrado). */
+    /** Posicoes com filtros opcionais de unidade/insumo (KPIs do resumo de estoque filtrado). */
     @Query("""
             SELECT p FROM PosicaoEstoque p
             WHERE (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR p.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
             """)
     List<PosicaoEstoque> buscarFiltrado(@Param("unidadeId") UUID unidadeId,
-                                        @Param("medicamentoId") UUID medicamentoId);
+                                        @Param("insumoId") UUID insumoId);
 
     /**
-     * Medicamentos com mais posicoes criticas — base para escolher o item do grafico agregado do
-     * dashboard (RF-DASH/RF-PRV-02). Retorna pares [medicamentoId, totalCriticos]. O filtro
+     * Insumos com mais posicoes criticas — base para escolher o item do grafico agregado do
+     * dashboard (RF-DASH/RF-PRV-02). Retorna pares [insumoId, totalCriticos]. O filtro
      * opcional de unidade restringe o ranking ao escopo do dashboard filtrado.
      */
     @Query("""
-            SELECT p.medicamento.id, COUNT(p) FROM PosicaoEstoque p
+            SELECT p.insumo.id, COUNT(p) FROM PosicaoEstoque p
             WHERE p.quantidade < p.nivelCritico
               AND (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
-            GROUP BY p.medicamento.id
+            GROUP BY p.insumo.id
             ORDER BY COUNT(p) DESC
             """)
-    List<Object[]> contarCriticosPorMedicamento(@Param("unidadeId") UUID unidadeId, Pageable pageable);
+    List<Object[]> contarCriticosPorInsumo(@Param("unidadeId") UUID unidadeId, Pageable pageable);
 }

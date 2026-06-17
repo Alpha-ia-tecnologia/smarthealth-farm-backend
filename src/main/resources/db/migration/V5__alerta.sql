@@ -5,7 +5,7 @@ create table alerta (
     id               uuid         primary key,
     tipo             varchar(20)  not null,
     severidade       varchar(10)  not null,
-    medicamento_id   uuid         not null references medicamento (id),
+    insumo_id   uuid         not null references insumo (id),
     unidade_id       uuid         not null references unidade (id),
     lote_id          uuid         references lote (id),
     mensagem         varchar(300) not null,

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Linha da tabela de alertas do front (RF-ALE-01/02/04): tipo, severidade, medicamento, unidade,
+ * Linha da tabela de alertas do front (RF-ALE-01/02/04): tipo, severidade, insumo, unidade,
  * mensagem, destinatarios (perfis) e status. {@code loteId}/{@code numeroLote} so vem em alertas
  * de vencimento.
  */
@@ -20,9 +20,9 @@ public record AlertaResponse(
         UUID id,
         TipoAlerta tipo,
         Severidade severidade,
-        UUID medicamentoId,
-        String medicamentoCodigo,
-        String medicamentoNome,
+        UUID insumoId,
+        String insumoCodigo,
+        String insumoNome,
         UUID unidadeId,
         String unidadeSigla,
         String unidadeNome,
@@ -45,9 +45,9 @@ public record AlertaResponse(
                 a.getId(),
                 a.getTipo(),
                 a.getSeveridade(),
-                a.getMedicamento().getId(),
-                a.getMedicamento().getCodigo(),
-                a.getMedicamento().getNome(),
+                a.getInsumo().getId(),
+                a.getInsumo().getCodigo(),
+                a.getInsumo().getNome(),
                 a.getUnidade().getId(),
                 a.getUnidade().getSigla(),
                 a.getUnidade().getNome(),

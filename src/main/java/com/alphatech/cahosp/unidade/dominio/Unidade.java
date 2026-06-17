@@ -23,7 +23,7 @@ import java.util.UUID;
  * pelo {@link com.alphatech.cahosp.unidade.UnidadeSeeder} para idempotencia).
  *
  * <p>{@link #hub} substitui o filtro fragil {@code id == "u-cahosp"} herdado do mock do front:
- * o hub logistico nao consome medicamentos diretamente, sendo excluido das listas operacionais.
+ * o hub logistico nao consome insumos diretamente, sendo excluido das listas operacionais.
  */
 @Entity
 @Table(name = "unidade")

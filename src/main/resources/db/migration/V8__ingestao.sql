@@ -1,4 +1,4 @@
--- RF-DAD — fontes de dados ingeridas e qualidade da base historica por familia terapeutica.
+-- RF-DAD — fontes de dados ingeridas e qualidade da base historica por categoria.
 
 create table fonte_dado (
     id               uuid          primary key,
@@ -15,9 +15,9 @@ create table fonte_dado (
     atualizado_em    timestamptz   not null
 );
 
-create table qualidade_familia (
+create table qualidade_categoria (
     id            uuid         primary key,
-    familia       varchar(30)  not null unique,
+    categoria       varchar(30)  not null unique,
     maturidade    integer      not null,
     completude    integer      not null,
     consistencia  integer      not null,

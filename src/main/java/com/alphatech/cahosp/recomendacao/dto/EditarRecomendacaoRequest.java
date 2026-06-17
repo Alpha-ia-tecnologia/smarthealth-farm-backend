@@ -6,13 +6,13 @@ import jakarta.validation.constraints.Positive;
 import java.util.UUID;
 
 /**
- * Edição de uma recomendação ainda pendente (RF-REC-05): ajusta medicamento, unidades e quantidade.
+ * Edição de uma recomendação ainda pendente (RF-REC-05): ajusta insumo, unidades e quantidade.
  * {@code unidadeOrigemId} é obrigatório quando a recomendação é uma redistribuição e nulo numa
  * reposição (o serviço valida conforme o tipo). A economia é recalculada no servidor.
  */
 public record EditarRecomendacaoRequest(
-        @NotNull(message = "O medicamento e obrigatorio.")
-        UUID medicamentoId,
+        @NotNull(message = "O insumo e obrigatorio.")
+        UUID insumoId,
         UUID unidadeOrigemId,
         @NotNull(message = "A unidade de destino e obrigatoria.")
         UUID unidadeDestinoId,

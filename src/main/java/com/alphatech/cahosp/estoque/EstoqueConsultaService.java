@@ -52,30 +52,30 @@ public class EstoqueConsultaService {
      * Posicoes paginadas com filtros opcionais. O filtro de status (derivado) e aplicado na query
      * via {@link EspecificacoesPosicao}, garantindo paginacao correta no banco.
      */
-    public Page<PosicaoEstoqueResponse> listarPosicoes(UUID unidadeId, UUID medicamentoId,
+    public Page<PosicaoEstoqueResponse> listarPosicoes(UUID unidadeId, UUID insumoId,
                                                        StatusEstoque status, String busca,
                                                        Pageable pageable) {
         return posicaoRepository
-                .findAll(EspecificacoesPosicao.comFiltros(unidadeId, medicamentoId, status, normalizar(busca)),
+                .findAll(EspecificacoesPosicao.comFiltros(unidadeId, insumoId, status, normalizar(busca)),
                         pageable)
                 .map(this::paraResponse);
     }
 
     /** Drill-down: a posicao, seus lotes e as movimentacoes recentes. RF-EST-03/06. */
-    public PosicaoEstoqueDetalheResponse detalhar(UUID medicamentoId, UUID unidadeId) {
+    public PosicaoEstoqueDetalheResponse detalhar(UUID insumoId, UUID unidadeId) {
         PosicaoEstoque posicao = posicaoRepository
-                .findByMedicamentoIdAndUnidadeId(medicamentoId, unidadeId)
+                .findByInsumoIdAndUnidadeId(insumoId, unidadeId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
-                        "Posicao de estoque nao encontrada para o medicamento/unidade informados."));
+                        "Posicao de estoque nao encontrada para o insumo/unidade informados."));
 
         LocalDate hoje = LocalDate.now();
         List<LoteResponse> lotes = loteRepository
-                .findByMedicamentoIdAndUnidadeIdOrderByValidadeAsc(medicamentoId, unidadeId)
+                .findByInsumoIdAndUnidadeIdOrderByValidadeAsc(insumoId, unidadeId)
                 .stream()
                 .map(l -> LoteResponse.de(l, calculadora.diasParaVencer(l.getValidade(), hoje)))
                 .toList();
         List<MovimentacaoResponse> movimentacoes = movimentacaoRepository
-                .findByMedicamentoIdAndUnidadeIdOrderByDataHoraDesc(medicamentoId, unidadeId,
+                .findByInsumoIdAndUnidadeIdOrderByDataHoraDesc(insumoId, unidadeId,
                         PageRequest.of(0, MOVIMENTACOES_DETALHE))
                 .stream()
                 .map(MovimentacaoResponse::de)
@@ -84,36 +84,36 @@ public class EstoqueConsultaService {
         return new PosicaoEstoqueDetalheResponse(paraResponse(posicao), lotes, movimentacoes);
     }
 
-    /** KPIs do painel de estoque, com filtros opcionais de unidade/medicamento (RF-EST-01/04/05). */
-    public ResumoEstoqueResponse resumo(UUID unidadeId, UUID medicamentoId) {
-        List<PosicaoEstoque> posicoes = posicaoRepository.buscarFiltrado(unidadeId, medicamentoId);
+    /** KPIs do painel de estoque, com filtros opcionais de unidade/insumo (RF-EST-01/04/05). */
+    public ResumoEstoqueResponse resumo(UUID unidadeId, UUID insumoId) {
+        List<PosicaoEstoque> posicoes = posicaoRepository.buscarFiltrado(unidadeId, insumoId);
         long itensCriticos = posicoes.stream().filter(this::critico).count();
         long totalUnidades = posicoes.stream().mapToLong(PosicaoEstoque::getQuantidade).sum();
         long leadMedio = posicoes.isEmpty() ? 0 : Math.round(posicoes.stream()
                 .mapToInt(PosicaoEstoque::getTempoMedioRessuprimentoDias).average().orElse(0));
         long lotesProximos = loteRepository.contarProximosVencimento(
-                LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO), unidadeId, medicamentoId);
+                LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO), unidadeId, insumoId);
         return new ResumoEstoqueResponse(itensCriticos, lotesProximos, leadMedio, totalUnidades);
     }
 
-    /** Lotes paginados com filtros (unidade, medicamento, apenas com saldo, validade ate N dias). */
-    public Page<LoteResponse> listarLotes(UUID unidadeId, UUID medicamentoId,
+    /** Lotes paginados com filtros (unidade, insumo, apenas com saldo, validade ate N dias). */
+    public Page<LoteResponse> listarLotes(UUID unidadeId, UUID insumoId,
                                           boolean apenasComSaldo, Integer validadeAteDias,
                                           Pageable pageable) {
         LocalDate hoje = LocalDate.now();
         LocalDate validadeAte = validadeAteDias == null ? null : hoje.plusDays(validadeAteDias);
         return loteRepository
-                .findAll(EspecificacoesLote.comFiltros(unidadeId, medicamentoId, apenasComSaldo, validadeAte),
+                .findAll(EspecificacoesLote.comFiltros(unidadeId, insumoId, apenasComSaldo, validadeAte),
                         pageable)
                 .map(l -> LoteResponse.de(l, calculadora.diasParaVencer(l.getValidade(), hoje)));
     }
 
     /** Movimentacoes (livro-razao) paginadas com filtros, mais recentes primeiro. RF-EST-06. */
-    public Page<MovimentacaoResponse> listarMovimentacoes(UUID medicamentoId, UUID unidadeId,
+    public Page<MovimentacaoResponse> listarMovimentacoes(UUID insumoId, UUID unidadeId,
                                                           UUID loteId, TipoMovimentacao tipo,
                                                           Pageable pageable) {
         return movimentacaoRepository
-                .buscarComFiltros(medicamentoId, unidadeId, loteId, tipo, pageable)
+                .buscarComFiltros(insumoId, unidadeId, loteId, tipo, pageable)
                 .map(MovimentacaoResponse::de);
     }
 

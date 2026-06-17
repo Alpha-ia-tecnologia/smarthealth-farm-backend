@@ -4,7 +4,7 @@ import com.alphatech.cahosp.alerta.dominio.Alerta;
 import com.alphatech.cahosp.alerta.dominio.Severidade;
 import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
 import com.alphatech.cahosp.alerta.dominio.TipoAlerta;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.seguranca.auditoria.RegistradorAuditoria;
 import com.alphatech.cahosp.seguranca.auditoria.dominio.CategoriaAuditoria;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
@@ -44,7 +44,7 @@ class AlertaServiceTest {
     /** Alerta real (transicoes de status reais) com relacionamentos mockados (so para o DTO). */
     private Alerta alertaAberto() {
         return new Alerta(TipoAlerta.DESABASTECIMENTO, Severidade.CRITICO,
-                org.mockito.Mockito.mock(Medicamento.class), org.mockito.Mockito.mock(Unidade.class),
+                org.mockito.Mockito.mock(Insumo.class), org.mockito.Mockito.mock(Unidade.class),
                 null, "Cobertura abaixo do minimo.", Set.of(Perfil.OPERADOR), 3);
     }
 

@@ -20,12 +20,12 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
 
     /**
      * Lista recomendacoes, paginada, com filtros opcionais (tipo, status, origem do motor,
-     * prioridade, unidade — destino OU origem —, medicamento, busca). Medicamento e unidades vem
+     * prioridade, unidade — destino OU origem —, insumo, busca). Insumo e unidades vem
      * em fetch join (to-one, compativel com paginacao no banco) para evitar N+1. RF-REC-01.
      */
     @Query(value = """
             SELECT r FROM Recomendacao r
-              JOIN FETCH r.medicamento m
+              JOIN FETCH r.insumo m
               JOIN FETCH r.unidadeDestino ud
               LEFT JOIN FETCH r.unidadeOrigem uo
             WHERE (:tipo IS NULL OR r.tipo = :tipo)
@@ -33,7 +33,7 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
               AND (:origemMotor IS NULL OR r.origemMotor = :origemMotor)
               AND (:prioridade IS NULL OR r.prioridade = :prioridade)
               AND (:unidadeId IS NULL OR ud.id = :unidadeId OR uo.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR m.id = :medicamentoId)
+              AND (:insumoId IS NULL OR m.id = :insumoId)
               AND (:busca IS NULL
                    OR LOWER(m.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
                    OR LOWER(ud.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
@@ -42,7 +42,7 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
             """,
             countQuery = """
             SELECT COUNT(r) FROM Recomendacao r
-              JOIN r.medicamento m
+              JOIN r.insumo m
               JOIN r.unidadeDestino ud
               LEFT JOIN r.unidadeOrigem uo
             WHERE (:tipo IS NULL OR r.tipo = :tipo)
@@ -50,7 +50,7 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
               AND (:origemMotor IS NULL OR r.origemMotor = :origemMotor)
               AND (:prioridade IS NULL OR r.prioridade = :prioridade)
               AND (:unidadeId IS NULL OR ud.id = :unidadeId OR uo.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR m.id = :medicamentoId)
+              AND (:insumoId IS NULL OR m.id = :insumoId)
               AND (:busca IS NULL
                    OR LOWER(m.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
                    OR LOWER(ud.nome) LIKE LOWER(CONCAT('%', CAST(:busca AS string), '%'))
@@ -62,14 +62,14 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
                                         @Param("origemMotor") OrigemMotor origemMotor,
                                         @Param("prioridade") Prioridade prioridade,
                                         @Param("unidadeId") UUID unidadeId,
-                                        @Param("medicamentoId") UUID medicamentoId,
+                                        @Param("insumoId") UUID insumoId,
                                         @Param("busca") String busca,
                                         Pageable pageable);
 
     /** Recomendacao com os relacionamentos carregados (resposta apos aprovar/executar). */
     @Query("""
             SELECT r FROM Recomendacao r
-              JOIN FETCH r.medicamento
+              JOIN FETCH r.insumo
               JOIN FETCH r.unidadeDestino
               LEFT JOIN FETCH r.unidadeOrigem
             WHERE r.id = :id
@@ -98,7 +98,7 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
      */
     @Query("""
             SELECT r FROM Recomendacao r
-              JOIN FETCH r.medicamento
+              JOIN FETCH r.insumo
               JOIN FETCH r.unidadeDestino
               LEFT JOIN FETCH r.unidadeOrigem
             WHERE r.status = :status
@@ -113,7 +113,7 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
      */
     @Query("""
             SELECT r FROM Recomendacao r
-              JOIN FETCH r.medicamento
+              JOIN FETCH r.insumo
               JOIN FETCH r.unidadeDestino
               LEFT JOIN FETCH r.unidadeOrigem
             WHERE r.status <> :status
@@ -121,57 +121,57 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
             """)
     List<Recomendacao> findAbertas(@Param("status") StatusRecomendacao status, Pageable pageable);
 
-    // ----- Painel filtrado por unidade/medicamento (RF-DASH-01/02) -----
+    // ----- Painel filtrado por unidade/insumo (RF-DASH-01/02) -----
 
     /**
      * Conta recomendacoes para o painel com filtros opcionais (status, unidade — destino OU
-     * origem —, medicamento). Com todos nulos, equivale a contagem da rede inteira.
+     * origem —, insumo). Com todos nulos, equivale a contagem da rede inteira.
      */
     @Query("""
             SELECT COUNT(r) FROM Recomendacao r
             WHERE (:status IS NULL OR r.status = :status)
               AND (:origemMotor IS NULL OR r.origemMotor = :origemMotor)
               AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR r.insumo.id = :insumoId)
             """)
     long contarPainel(@Param("status") StatusRecomendacao status,
                       @Param("origemMotor") OrigemMotor origemMotor,
                       @Param("unidadeId") UUID unidadeId,
-                      @Param("medicamentoId") UUID medicamentoId);
+                      @Param("insumoId") UUID insumoId);
 
-    /** Variante de {@link #somarEconomiaEstimada} com filtro opcional de unidade/medicamento. */
+    /** Variante de {@link #somarEconomiaEstimada} com filtro opcional de unidade/insumo. */
     @Query("""
             SELECT COALESCE(SUM(r.economiaEstimada), 0) FROM Recomendacao r
             WHERE r.status <> com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao.RECUSADA
               AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR r.insumo.id = :insumoId)
             """)
     BigDecimal somarEconomiaEstimadaFiltrada(@Param("unidadeId") UUID unidadeId,
-                                             @Param("medicamentoId") UUID medicamentoId);
+                                             @Param("insumoId") UUID insumoId);
 
-    /** Variante de {@link #findPendentesPorImpacto} com filtro opcional de unidade/medicamento. */
+    /** Variante de {@link #findPendentesPorImpacto} com filtro opcional de unidade/insumo. */
     @Query("""
             SELECT r FROM Recomendacao r
-              JOIN FETCH r.medicamento
+              JOIN FETCH r.insumo
               JOIN FETCH r.unidadeDestino
               LEFT JOIN FETCH r.unidadeOrigem
             WHERE r.status = :status
               AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR r.insumo.id = :insumoId)
             ORDER BY r.economiaEstimada DESC
             """)
     List<Recomendacao> findPendentesPorImpactoFiltrado(@Param("status") StatusRecomendacao status,
                                                        @Param("unidadeId") UUID unidadeId,
-                                                       @Param("medicamentoId") UUID medicamentoId,
+                                                       @Param("insumoId") UUID insumoId,
                                                        Pageable pageable);
 
     // ----- Suporte ao motor de geracao -----
 
     /**
-     * Chaves [tipo, medicamentoId, unidadeDestinoId] das recomendacoes existentes — carregadas de
+     * Chaves [tipo, insumoId, unidadeDestinoId] das recomendacoes existentes — carregadas de
      * uma vez para o motor deduplicar em memoria, em vez de um {@code exists} por candidato (N+1).
      */
-    @Query("SELECT r.tipo, r.medicamento.id, r.unidadeDestino.id FROM Recomendacao r")
+    @Query("SELECT r.tipo, r.insumo.id, r.unidadeDestino.id FROM Recomendacao r")
     List<Object[]> chavesExistentes();
 
     /**

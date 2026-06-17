@@ -39,7 +39,7 @@ class AutenticacaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
-    @DisplayName("Login com credenciais do admin devolve token e perfil TI")
+    @DisplayName("Login com credenciais do admin devolve token e perfil Admin")
     void loginAdminOk() throws Exception {
         mvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -48,7 +48,7 @@ class AutenticacaoIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.token").isNotEmpty())
                 .andExpect(jsonPath("$.data.usuario.email").value(ADMIN_EMAIL))
-                .andExpect(jsonPath("$.data.usuario.perfil").value("TI"));
+                .andExpect(jsonPath("$.data.usuario.perfil").value("Admin"));
     }
 
     @Test
@@ -85,7 +85,7 @@ class AutenticacaoIT extends BaseIntegracaoPostgres {
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.email").value(ADMIN_EMAIL))
-                .andExpect(jsonPath("$.data.perfil").value("TI"));
+                .andExpect(jsonPath("$.data.perfil").value("Admin"));
     }
 
     @Test

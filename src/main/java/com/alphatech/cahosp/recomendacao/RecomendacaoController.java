@@ -48,28 +48,28 @@ public class RecomendacaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista recomendacoes, paginadas, com filtros (tipo, status, motor, prioridade, unidade, medicamento, busca)")
+    @Operation(summary = "Lista recomendacoes, paginadas, com filtros (tipo, status, motor, prioridade, unidade, insumo, busca)")
     public ResponseEntity<ApiResponse<List<RecomendacaoResponse>>> listar(
             @RequestParam(required = false) TipoRecomendacao tipo,
             @RequestParam(required = false) StatusRecomendacao status,
             @RequestParam(required = false) OrigemMotor origemMotor,
             @RequestParam(required = false) Prioridade prioridade,
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) String busca,
             @PageableDefault(size = 10, sort = "economiaEstimada", direction = Sort.Direction.DESC)
             Pageable pageable) {
         Page<RecomendacaoResponse> pagina = recomendacaoService.listar(
-                tipo, status, origemMotor, prioridade, unidadeId, medicamentoId, busca, pageable);
+                tipo, status, origemMotor, prioridade, unidadeId, insumoId, busca, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do painel (pendentes, economia potencial, geradas por IA, taxa de adesao); filtros por unidade/medicamento")
+    @Operation(summary = "KPIs do painel (pendentes, economia potencial, geradas por IA, taxa de adesao); filtros por unidade/insumo")
     public ResponseEntity<ApiResponse<ResumoRecomendacoesResponse>> resumo(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId) {
-        return ResponseEntity.ok(ApiResponse.ok(recomendacaoService.resumo(unidadeId, medicamentoId)));
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(recomendacaoService.resumo(unidadeId, insumoId)));
     }
 
     @PostMapping
@@ -83,7 +83,7 @@ public class RecomendacaoController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('GESTOR')")
-    @Operation(summary = "Edita uma recomendacao pendente: medicamento, unidades e quantidade (acao de Gestor)")
+    @Operation(summary = "Edita uma recomendacao pendente: insumo, unidades e quantidade (acao de Gestor)")
     public ResponseEntity<ApiResponse<RecomendacaoResponse>> editar(
             @PathVariable UUID id, @Valid @RequestBody EditarRecomendacaoRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(recomendacaoService.editar(id, request)));

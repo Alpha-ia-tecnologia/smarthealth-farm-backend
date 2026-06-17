@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.estoque.dominio;
 
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -38,8 +38,8 @@ public class Movimentacao {
     private Lote lote;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_id", nullable = false)
@@ -72,7 +72,7 @@ public class Movimentacao {
     public Movimentacao(Lote lote, TipoMovimentacao tipo, int quantidade,
                         Instant dataHora, String responsavel, String documento) {
         this.lote = lote;
-        this.medicamento = lote.getMedicamento();
+        this.insumo = lote.getInsumo();
         this.unidade = lote.getUnidade();
         this.tipo = tipo;
         this.quantidade = quantidade;
@@ -96,8 +96,8 @@ public class Movimentacao {
         return lote;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidade() {

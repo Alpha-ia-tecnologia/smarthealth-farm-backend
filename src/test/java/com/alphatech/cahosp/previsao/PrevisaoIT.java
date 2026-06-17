@@ -57,7 +57,7 @@ class PrevisaoIT extends BaseIntegracaoPostgres {
         tokenOperador = autenticar(emailO);
 
         Previsao previsao = previsaoRepository.findAll().get(0);
-        medId = previsao.getMedicamento().getId();
+        medId = previsao.getInsumo().getId();
         uniId = previsao.getUnidade().getId();
     }
 
@@ -140,7 +140,7 @@ class PrevisaoIT extends BaseIntegracaoPostgres {
     void detalhar() throws Exception {
         mvc.perform(get("/previsoes/" + medId + "/" + uniId).header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.previsao.medicamentoId").value(medId.toString()))
+                .andExpect(jsonPath("$.data.previsao.insumoId").value(medId.toString()))
                 .andExpect(jsonPath("$.data.serie.length()").value(15))
                 .andExpect(jsonPath("$.data.serie[0].periodo").exists());
     }

@@ -15,10 +15,10 @@ class ApiResponseTest {
     @Test
     @DisplayName("ok() marca sucesso, carrega o payload e nao define total")
     void okDeveEnvelopar() {
-        ApiResponse<String> resp = ApiResponse.ok("medicamento");
+        ApiResponse<String> resp = ApiResponse.ok("insumo");
 
         assertThat(resp.success()).isTrue();
-        assertThat(resp.data()).isEqualTo("medicamento");
+        assertThat(resp.data()).isEqualTo("insumo");
         assertThat(resp.total()).isNull();
         assertThat(resp.error()).isNull();
         assertThat(resp.codigo()).isNull();

@@ -49,26 +49,26 @@ public class AlertaController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista alertas, paginados, com filtros (tipo, severidade, status, unidade, medicamento, busca)")
+    @Operation(summary = "Lista alertas, paginados, com filtros (tipo, severidade, status, unidade, insumo, busca)")
     public ResponseEntity<ApiResponse<List<AlertaResponse>>> listar(
             @RequestParam(required = false) TipoAlerta tipo,
             @RequestParam(required = false) Severidade severidade,
             @RequestParam(required = false) StatusAlerta status,
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) String busca,
             @PageableDefault(size = 10, sort = "diasParaEvento") Pageable pageable) {
         Page<AlertaResponse> pagina = alertaService.listar(
-                tipo, severidade, status, unidadeId, medicamentoId, busca, pageable);
+                tipo, severidade, status, unidadeId, insumoId, busca, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do painel de alertas (abertos, desabastecimento, vencimento, tratados); filtros por unidade/medicamento")
+    @Operation(summary = "KPIs do painel de alertas (abertos, desabastecimento, vencimento, tratados); filtros por unidade/insumo")
     public ResponseEntity<ApiResponse<ResumoAlertasResponse>> resumo(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId) {
-        return ResponseEntity.ok(ApiResponse.ok(alertaService.resumo(unidadeId, medicamentoId)));
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(alertaService.resumo(unidadeId, insumoId)));
     }
 
     @GetMapping("/limiares")
