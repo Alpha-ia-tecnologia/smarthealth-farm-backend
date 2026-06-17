@@ -10,8 +10,8 @@ import java.util.UUID;
  */
 public record LoteResponse(
         UUID id,
-        UUID medicamentoId,
-        String medicamentoNome,
+        UUID insumoId,
+        String insumoNome,
         UUID unidadeId,
         String unidadeSigla,
         String numeroLote,
@@ -24,8 +24,8 @@ public record LoteResponse(
     public static LoteResponse de(Lote lote, long diasParaVencer) {
         return new LoteResponse(
                 lote.getId(),
-                lote.getMedicamento().getId(),
-                lote.getMedicamento().getNome(),
+                lote.getInsumo().getId(),
+                lote.getInsumo().getNome(),
                 lote.getUnidade().getId(),
                 lote.getUnidade().getSigla(),
                 lote.getNumeroLote(),

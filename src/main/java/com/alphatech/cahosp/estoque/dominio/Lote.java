@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.estoque.dominio;
 
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -20,7 +20,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Lote de um medicamento em uma unidade — unidade de rastreabilidade por validade/fabricante
+ * Lote de um insumo em uma unidade — unidade de rastreabilidade por validade/fabricante
  * (RF-EST-02/03). O saldo do lote ({@link #quantidade}) so muda via livro-razao
  * ({@link Movimentacao}); a entidade expoe metodos de dominio coerentes (sem setter cru).
  */
@@ -34,8 +34,8 @@ public class Lote {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_id", nullable = false)
@@ -65,9 +65,9 @@ public class Lote {
         // JPA
     }
 
-    public Lote(Medicamento medicamento, Unidade unidade, String numeroLote,
+    public Lote(Insumo insumo, Unidade unidade, String numeroLote,
                 LocalDate validade, int quantidade, String fabricante) {
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidade = unidade;
         this.numeroLote = numeroLote;
         this.validade = validade;
@@ -101,8 +101,8 @@ public class Lote {
         return id;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidade() {

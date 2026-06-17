@@ -5,10 +5,10 @@ import com.alphatech.cahosp.estoque.dominio.Lote;
 import com.alphatech.cahosp.estoque.dominio.Movimentacao;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
 import com.alphatech.cahosp.estoque.dominio.TipoMovimentacao;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.UnidadeRepository;
 import com.alphatech.cahosp.unidade.dominio.Porte;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
@@ -44,18 +44,18 @@ public class EstoqueSeeder implements CommandLineRunner {
     private static final String[] RESPONSAVEIS = {
             "A. Sousa", "M. Lima", "R. Costa", "J. Pereira", "C. Mendes"};
 
-    private final MedicamentoRepository medicamentoRepository;
+    private final InsumoRepository insumoRepository;
     private final UnidadeRepository unidadeRepository;
     private final PosicaoEstoqueRepository posicaoRepository;
     private final LoteRepository loteRepository;
     private final MovimentacaoRepository movimentacaoRepository;
 
-    public EstoqueSeeder(MedicamentoRepository medicamentoRepository,
+    public EstoqueSeeder(InsumoRepository insumoRepository,
                          UnidadeRepository unidadeRepository,
                          PosicaoEstoqueRepository posicaoRepository,
                          LoteRepository loteRepository,
                          MovimentacaoRepository movimentacaoRepository) {
-        this.medicamentoRepository = medicamentoRepository;
+        this.insumoRepository = insumoRepository;
         this.unidadeRepository = unidadeRepository;
         this.posicaoRepository = posicaoRepository;
         this.loteRepository = loteRepository;
@@ -68,13 +68,13 @@ public class EstoqueSeeder implements CommandLineRunner {
             log.info("Estoque ja semeado (posicoes: {}). Nada a fazer.", posicaoRepository.count());
             return;
         }
-        List<Medicamento> medicamentos = medicamentoRepository.findAll();
+        List<Insumo> insumos = insumoRepository.findAll();
         // Unidades atendidas: exclui o hub logistico (CAHOSP nao consome diretamente).
         List<Unidade> unidades = unidadeRepository.findAll().stream()
                 .filter(u -> !u.isHub())
                 .toList();
 
-        for (Medicamento med : medicamentos) {
+        for (Insumo med : insumos) {
             for (Unidade uni : unidades) {
                 GeradorPseudoaleatorio r =
                         GeradorPseudoaleatorio.comSemente("est" + med.getCodigo() + uni.getSigla());
@@ -100,7 +100,7 @@ public class EstoqueSeeder implements CommandLineRunner {
     }
 
     /** Cria os lotes (somando a quantidade da posicao) e seu historico de movimentacoes. */
-    private void semearLotes(Medicamento med, Unidade uni, int quantidade, GeradorPseudoaleatorio r) {
+    private void semearLotes(Insumo med, Unidade uni, int quantidade, GeradorPseudoaleatorio r) {
         int nLotes = 1 + (int) Math.floor(r.proximo() * 2); // 1 ou 2
         int restante = quantidade;
         List<Lote> lotesSalvos = new ArrayList<>();
@@ -113,7 +113,7 @@ public class EstoqueSeeder implements CommandLineRunner {
             LocalDate validade = BASE_VALIDADE.plusMonths(mesesValidade)
                     .plusDays((int) Math.floor(r.proximo() * 27));
             String numeroLote = String.format("%s%s%04d",
-                    med.getCodigo().replace("MED-", ""), uni.getSigla(),
+                    med.getCodigo().replace("INS-", ""), uni.getSigla(),
                     1000 + (int) Math.floor(r.proximo() * 8999));
             String fabricante = FABRICANTES[(int) Math.floor(r.proximo() * FABRICANTES.length)];
 
@@ -143,12 +143,12 @@ public class EstoqueSeeder implements CommandLineRunner {
         movimentacaoRepository.saveAll(movs);
     }
 
-    /** Demanda mensal base por porte/familia/criticidade (espelha o front). */
-    private int baseDemanda(Medicamento med, Unidade uni) {
+    /** Demanda mensal base por porte/categoria/criticidade (espelha o front). */
+    private int baseDemanda(Insumo med, Unidade uni) {
         double porte = uni.getPorte() == Porte.GRANDE ? 1.0
                 : uni.getPorte() == Porte.MEDIO ? 0.55 : 0.3;
-        double base = med.getFamilia() == FamiliaTerapeutica.INSUMOS_MEDICOS ? 4200
-                : med.getFamilia() == FamiliaTerapeutica.SOROS_E_VACINAS ? 1800
+        double base = med.getCategoria() == CategoriaInsumo.INSUMOS_MEDICOS ? 4200
+                : med.getCategoria() == CategoriaInsumo.SOROS_E_VACINAS ? 1800
                 : med.getCriticidade() == Criticidade.ALTA ? 900 : 1400;
         return arredondar(base * porte);
     }

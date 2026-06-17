@@ -3,9 +3,9 @@ package com.alphatech.cahosp.ingestao;
 import com.alphatech.cahosp.comum.GeradorPseudoaleatorio;
 import com.alphatech.cahosp.ingestao.dominio.FonteDado;
 import com.alphatech.cahosp.ingestao.dominio.GranularidadeDado;
-import com.alphatech.cahosp.ingestao.dominio.QualidadeFamilia;
+import com.alphatech.cahosp.ingestao.dominio.QualidadeCategoria;
 import com.alphatech.cahosp.ingestao.dominio.StatusFonte;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -16,11 +16,11 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * Popula fontes de dados e qualidade por familia no startup (idempotente), espelhando
- * {@code fontes} e {@code qualidadeFamilias} do front (src/data/index.ts). RF-DAD.
+ * Popula fontes de dados e qualidade por categoria no startup (idempotente), espelhando
+ * {@code fontes} e {@code qualidadeCategorias} do front (src/data/index.ts). RF-DAD.
  *
  * <p>Roda apos os demais seeders ({@code @Order(80)}). Idempotente por {@code codigo} e
- * {@link FamiliaTerapeutica}.
+ * {@link CategoriaInsumo}.
  */
 @Component
 @Order(80)
@@ -53,10 +53,10 @@ public class IngestaoSeeder implements CommandLineRunner {
                     "Datasus · mensal"));
 
     private final FonteDadoRepository fonteRepository;
-    private final QualidadeFamiliaRepository qualidadeRepository;
+    private final QualidadeCategoriaRepository qualidadeRepository;
 
     public IngestaoSeeder(FonteDadoRepository fonteRepository,
-                          QualidadeFamiliaRepository qualidadeRepository) {
+                          QualidadeCategoriaRepository qualidadeRepository) {
         this.fonteRepository = fonteRepository;
         this.qualidadeRepository = qualidadeRepository;
     }
@@ -66,7 +66,7 @@ public class IngestaoSeeder implements CommandLineRunner {
         int novasFontes = semearFontes();
         int novasQualidades = semearQualidade();
         if (novasFontes > 0 || novasQualidades > 0) {
-            log.info("Ingestao semeada: {} fontes, {} qualidades por familia (total fontes: {}).",
+            log.info("Ingestao semeada: {} fontes, {} qualidades por categoria (total fontes: {}).",
                     novasFontes, novasQualidades, fonteRepository.count());
         }
     }
@@ -96,20 +96,20 @@ public class IngestaoSeeder implements CommandLineRunner {
 
     private int semearQualidade() {
         int inseridas = 0;
-        FamiliaTerapeutica[] familias = FamiliaTerapeutica.values();
-        for (int i = 0; i < familias.length; i++) {
-            FamiliaTerapeutica familia = familias[i];
-            if (qualidadeRepository.existsByFamilia(familia)) {
+        CategoriaInsumo[] categorias = CategoriaInsumo.values();
+        for (int i = 0; i < categorias.length; i++) {
+            CategoriaInsumo categoria = categorias[i];
+            if (qualidadeRepository.existsByCategoria(categoria)) {
                 continue;
             }
-            var r = GeradorPseudoaleatorio.comSemente("qf" + familia.rotulo());
+            var r = GeradorPseudoaleatorio.comSemente("qf" + categoria.rotulo());
             GranularidadeDado granularidade = switch (i % 3) {
                 case 0 -> GranularidadeDado.DIARIA;
                 case 1 -> GranularidadeDado.SEMANAL;
                 default -> GranularidadeDado.MENSAL;
             };
-            qualidadeRepository.save(new QualidadeFamilia(
-                    familia,
+            qualidadeRepository.save(new QualidadeCategoria(
+                    categoria,
                     55 + (int) Math.round(r.proximo() * 42),
                     60 + (int) Math.round(r.proximo() * 38),
                     58 + (int) Math.round(r.proximo() * 40),

@@ -80,7 +80,7 @@ class PainelIT extends BaseIntegracaoPostgres {
     void dashboard() throws Exception {
         mvc.perform(get("/painel").header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.totais.medicamentos").value(30))
+                .andExpect(jsonPath("$.data.totais.insumos").value(30))
                 .andExpect(jsonPath("$.data.totais.unidades").value(7))
                 .andExpect(jsonPath("$.data.totais.alertasAbertos").isNumber())
                 // "ativos" (abertos + em tratamento) bate com a metrica da tela de alertas:
@@ -92,7 +92,7 @@ class PainelIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.data.coberturaPorUnidade[0].nome").exists())
                 .andExpect(jsonPath("$.data.coberturaPorUnidade[0].valor").isNumber())
                 .andExpect(jsonPath("$.data.coberturaPorUnidade[0].status").exists())
-                .andExpect(jsonPath("$.data.serieAgregada.medicamentoCodigo").exists())
+                .andExpect(jsonPath("$.data.serieAgregada.insumoCodigo").exists())
                 .andExpect(jsonPath("$.data.serieAgregada.serie").isArray())
                 .andExpect(jsonPath("$.data.serieAgregada.serie.length()").value(15))
                 .andExpect(jsonPath("$.data.alertasRecentes").isArray())
@@ -104,7 +104,7 @@ class PainelIT extends BaseIntegracaoPostgres {
     void operacional() throws Exception {
         mvc.perform(get("/painel/operacional").header(HttpHeaders.AUTHORIZATION, bearer()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.totais.medicamentos").value(30))
+                .andExpect(jsonPath("$.data.totais.insumos").value(30))
                 .andExpect(jsonPath("$.data.unidades").isArray())
                 .andExpect(jsonPath("$.data.unidades.length()").value(7))
                 .andExpect(jsonPath("$.data.unidades[0].sigla").exists())

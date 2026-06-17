@@ -1,4 +1,4 @@
-package com.alphatech.cahosp.medicamento.dominio;
+package com.alphatech.cahosp.insumo.dominio;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 /**
- * Criticidade clinico-operacional do medicamento. Alimenta o calculo de severidade de alertas
+ * Criticidade clinico-operacional do insumo. Alimenta o calculo de severidade de alertas
  * (RF-ALE) e a priorizacao de recomendacoes de reposicao (RF-REC).
  */
 public enum Criticidade {

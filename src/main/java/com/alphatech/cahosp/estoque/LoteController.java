@@ -40,15 +40,15 @@ public class LoteController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista lotes, paginados (filtros: unidade, medicamento, comSaldo, validadeAteDias)")
+    @Operation(summary = "Lista lotes, paginados (filtros: unidade, insumo, comSaldo, validadeAteDias)")
     public ResponseEntity<ApiResponse<List<LoteResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false, defaultValue = "false") boolean comSaldo,
             @RequestParam(required = false) Integer validadeAteDias,
             @PageableDefault(size = 10, sort = "validade") Pageable pageable) {
         Page<LoteResponse> pagina =
-                consultaService.listarLotes(unidadeId, medicamentoId, comSaldo, validadeAteDias, pageable);
+                consultaService.listarLotes(unidadeId, insumoId, comSaldo, validadeAteDias, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 

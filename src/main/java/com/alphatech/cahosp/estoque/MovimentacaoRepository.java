@@ -17,20 +17,20 @@ public interface MovimentacaoRepository extends JpaRepository<Movimentacao, UUID
      * Movimentacoes recentes de uma posicao (drill-down), mais novas primeiro. O {@code Pageable}
      * limita o volume — o livro-razao cresce sem limite. RF-EST-06.
      */
-    List<Movimentacao> findByMedicamentoIdAndUnidadeIdOrderByDataHoraDesc(
-            UUID medicamentoId, UUID unidadeId, Pageable pageable);
+    List<Movimentacao> findByInsumoIdAndUnidadeIdOrderByDataHoraDesc(
+            UUID insumoId, UUID unidadeId, Pageable pageable);
 
     /**
-     * Movimentacoes com filtros opcionais (medicamento, unidade, lote, tipo), paginadas. RF-EST-06.
+     * Movimentacoes com filtros opcionais (insumo, unidade, lote, tipo), paginadas. RF-EST-06.
      */
     @Query("""
             SELECT m FROM Movimentacao m
-            WHERE (:medicamentoId IS NULL OR m.medicamento.id = :medicamentoId)
+            WHERE (:insumoId IS NULL OR m.insumo.id = :insumoId)
               AND (:unidadeId IS NULL OR m.unidade.id = :unidadeId)
               AND (:loteId IS NULL OR m.lote.id = :loteId)
               AND (:tipo IS NULL OR m.tipo = :tipo)
             """)
-    Page<Movimentacao> buscarComFiltros(@Param("medicamentoId") UUID medicamentoId,
+    Page<Movimentacao> buscarComFiltros(@Param("insumoId") UUID insumoId,
                                         @Param("unidadeId") UUID unidadeId,
                                         @Param("loteId") UUID loteId,
                                         @Param("tipo") TipoMovimentacao tipo,

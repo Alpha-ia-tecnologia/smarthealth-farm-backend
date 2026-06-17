@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Filtro dinamico de lotes (unidade, medicamento, apenas com saldo, validade ate uma data).
+ * Filtro dinamico de lotes (unidade, insumo, apenas com saldo, validade ate uma data).
  *
  * <p>Usa a Criteria API (Specification) em vez de JPQL com {@code :param IS NULL}: o filtro de
  * <strong>data</strong> nullable ({@code validadeAte}) quebrava no PostgreSQL com
@@ -22,15 +22,15 @@ final class EspecificacoesLote {
     private EspecificacoesLote() {
     }
 
-    static Specification<Lote> comFiltros(UUID unidadeId, UUID medicamentoId,
+    static Specification<Lote> comFiltros(UUID unidadeId, UUID insumoId,
                                           boolean apenasComSaldo, LocalDate validadeAte) {
         return (root, query, cb) -> {
             List<Predicate> predicados = new ArrayList<>();
             if (unidadeId != null) {
                 predicados.add(cb.equal(root.get("unidade").get("id"), unidadeId));
             }
-            if (medicamentoId != null) {
-                predicados.add(cb.equal(root.get("medicamento").get("id"), medicamentoId));
+            if (insumoId != null) {
+                predicados.add(cb.equal(root.get("insumo").get("id"), insumoId));
             }
             if (apenasComSaldo) {
                 predicados.add(cb.greaterThan(root.get("quantidade"), 0));

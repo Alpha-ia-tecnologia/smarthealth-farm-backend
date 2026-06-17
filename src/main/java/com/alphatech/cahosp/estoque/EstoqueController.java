@@ -35,31 +35,31 @@ public class EstoqueController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista posicoes de estoque, paginadas, com filtros (unidade, medicamento, status, busca)")
+    @Operation(summary = "Lista posicoes de estoque, paginadas, com filtros (unidade, insumo, status, busca)")
     public ResponseEntity<ApiResponse<List<PosicaoEstoqueResponse>>> listar(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) StatusEstoque status,
             @RequestParam(required = false) String busca,
-            @PageableDefault(size = 10, sort = "medicamento.nome") Pageable pageable) {
+            @PageableDefault(size = 10, sort = "insumo.nome") Pageable pageable) {
         Page<PosicaoEstoqueResponse> pagina =
-                consultaService.listarPosicoes(unidadeId, medicamentoId, status, busca, pageable);
+                consultaService.listarPosicoes(unidadeId, insumoId, status, busca, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do estoque (itens criticos, lotes a vencer, lead medio, total); filtros por unidade/medicamento")
+    @Operation(summary = "KPIs do estoque (itens criticos, lotes a vencer, lead medio, total); filtros por unidade/insumo")
     public ResponseEntity<ApiResponse<ResumoEstoqueResponse>> resumo(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId) {
-        return ResponseEntity.ok(ApiResponse.ok(consultaService.resumo(unidadeId, medicamentoId)));
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(consultaService.resumo(unidadeId, insumoId)));
     }
 
-    @GetMapping("/{medicamentoId}/{unidadeId}")
+    @GetMapping("/{insumoId}/{unidadeId}")
     @Operation(summary = "Detalha uma posicao: lotes e movimentacoes recentes")
     public ResponseEntity<ApiResponse<PosicaoEstoqueDetalheResponse>> detalhar(
-            @PathVariable UUID medicamentoId,
+            @PathVariable UUID insumoId,
             @PathVariable UUID unidadeId) {
-        return ResponseEntity.ok(ApiResponse.ok(consultaService.detalhar(medicamentoId, unidadeId)));
+        return ResponseEntity.ok(ApiResponse.ok(consultaService.detalhar(insumoId, unidadeId)));
     }
 }

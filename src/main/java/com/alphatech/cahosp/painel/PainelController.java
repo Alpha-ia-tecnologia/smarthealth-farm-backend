@@ -38,10 +38,10 @@ public class PainelController {
 
     @GetMapping("/operacional")
     @Operation(summary = "Painel operacional: situacao por unidade, fila de alertas e recomendacoes em aberto "
-            + "(filtros opcionais por unidade e medicamento)")
+            + "(filtros opcionais por unidade e insumo)")
     public ResponseEntity<ApiResponse<PainelOperacionalResponse>> operacional(
             @RequestParam(required = false) UUID unidadeId,
-            @RequestParam(required = false) UUID medicamentoId) {
-        return ResponseEntity.ok(ApiResponse.ok(painelService.operacional(unidadeId, medicamentoId)));
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(painelService.operacional(unidadeId, insumoId)));
     }
 }

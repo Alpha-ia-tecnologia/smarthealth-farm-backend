@@ -1,7 +1,7 @@
 package com.alphatech.cahosp.recomendacao;
 
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao;
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
@@ -47,7 +47,7 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private RecomendacaoRepository recomendacaoRepository;
-    @Autowired private MedicamentoRepository medicamentoRepository;
+    @Autowired private InsumoRepository insumoRepository;
     @Autowired private UnidadeRepository unidadeRepository;
 
     private String tokenGestor;
@@ -215,16 +215,16 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.codigo").value("ACESSO_NEGADO"));
     }
 
-    private String corpoTransferencia(UUID medicamentoId, UUID origemId, UUID destinoId, int quantidade) {
+    private String corpoTransferencia(UUID insumoId, UUID origemId, UUID destinoId, int quantidade) {
         return """
-                {"medicamentoId":"%s","unidadeOrigemId":"%s","unidadeDestinoId":"%s","quantidade":%d}
-                """.formatted(medicamentoId, origemId, destinoId, quantidade);
+                {"insumoId":"%s","unidadeOrigemId":"%s","unidadeDestinoId":"%s","quantidade":%d}
+                """.formatted(insumoId, origemId, destinoId, quantidade);
     }
 
     @Test
     @DisplayName("Gestor cria transferencia manual (201): Redistribuição/Manual/Pendente")
     void criarTransferenciaComoGestor() throws Exception {
-        Medicamento med = medicamentoRepository.findAll().get(0);
+        Insumo med = insumoRepository.findAll().get(0);
         java.util.List<Unidade> unidades = unidadeRepository.findAll();
         UUID origem = unidades.get(0).getId();
         UUID destino = unidades.get(1).getId();
@@ -242,7 +242,7 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Criar com origem igual ao destino => 422 REGRA_NEGOCIO")
     void criarComOrigemIgualDestino() throws Exception {
-        Medicamento med = medicamentoRepository.findAll().get(0);
+        Insumo med = insumoRepository.findAll().get(0);
         UUID mesma = unidadeRepository.findAll().get(0).getId();
 
         mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
@@ -255,7 +255,7 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Criar com quantidade zero => 400 VALIDACAO")
     void criarComQuantidadeZero() throws Exception {
-        Medicamento med = medicamentoRepository.findAll().get(0);
+        Insumo med = insumoRepository.findAll().get(0);
         java.util.List<Unidade> unidades = unidadeRepository.findAll();
 
         mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
@@ -268,7 +268,7 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Operador nao pode criar transferencia => 403 ACESSO_NEGADO")
     void criarComoOperador() throws Exception {
-        Medicamento med = medicamentoRepository.findAll().get(0);
+        Insumo med = insumoRepository.findAll().get(0);
         java.util.List<Unidade> unidades = unidadeRepository.findAll();
 
         mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador))
@@ -281,7 +281,7 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Gestor edita uma transferencia recém-criada (200): nova quantidade, segue Pendente")
     void editarTransferencia() throws Exception {
-        Medicamento med = medicamentoRepository.findAll().get(0);
+        Insumo med = insumoRepository.findAll().get(0);
         java.util.List<Unidade> unidades = unidadeRepository.findAll();
         UUID origem = unidades.get(0).getId();
         UUID destino = unidades.get(1).getId();

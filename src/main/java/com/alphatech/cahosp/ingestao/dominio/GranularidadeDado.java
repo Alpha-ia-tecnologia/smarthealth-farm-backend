@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 /**
- * Granularidade temporal da base historica por familia terapeutica (RF-DAD-04). Espelha o campo
+ * Granularidade temporal da base historica por categoria (RF-DAD-04). Espelha o campo
  * {@code granularidade} do front ({@code Diária} / {@code Semanal} / {@code Mensal}).
  */
 public enum GranularidadeDado {

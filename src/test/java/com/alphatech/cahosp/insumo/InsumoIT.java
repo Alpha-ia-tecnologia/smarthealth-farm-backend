@@ -1,4 +1,4 @@
-package com.alphatech.cahosp.medicamento;
+package com.alphatech.cahosp.insumo;
 
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
 import com.alphatech.cahosp.unidade.UnidadeRepository;
@@ -29,12 +29,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Catalogo de medicamentos fim-a-fim (RF-DAD-06) contra PostgreSQL real. Confirma seed dos
- * 30 itens e os filtros mais usados pelo front (familia, criticidade, essencial, busca).
+ * Catalogo de insumos fim-a-fim (RF-DAD-06) contra PostgreSQL real. Confirma seed dos
+ * 30 itens e os filtros mais usados pelo front (categoria, criticidade, essencial, busca).
  */
 @AutoConfigureMockMvc
 @Transactional // isola cada teste (rollback) — mantem o catalogo semeado estavel para as contagens
-class MedicamentoIT extends BaseIntegracaoPostgres {
+class InsumoIT extends BaseIntegracaoPostgres {
 
     private static final String SENHA = "SenhaTeste123";
 
@@ -86,42 +86,42 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
-    @DisplayName("Seed populou 30 medicamentos com MED-001 = Amoxicilina")
+    @DisplayName("Seed populou 30 insumos com INS-001 = Amoxicilina")
     void seedPopulado() throws Exception {
-        mvc.perform(get("/medicamentos").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+        mvc.perform(get("/insumos").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.total").isNumber())
-                .andExpect(jsonPath("$.data[0].codigo").value("MED-001"))
-                .andExpect(jsonPath("$.data[0].familia").value("Antibióticos"));
+                .andExpect(jsonPath("$.data[0].codigo").value("INS-001"))
+                .andExpect(jsonPath("$.data[0].categoria").value("Antibióticos"));
     }
 
     @Test
-    @DisplayName("Filtros familia + criticidade + essencial")
+    @DisplayName("Filtros categoria + criticidade + essencial")
     void filtrosListagem() throws Exception {
-        mvc.perform(get("/medicamentos?familia=Antibióticos")
+        mvc.perform(get("/insumos?categoria=Antibióticos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(5));
 
-        mvc.perform(get("/medicamentos?criticidade=Alta")
+        mvc.perform(get("/insumos?criticidade=Alta")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(11));
 
-        mvc.perform(get("/medicamentos?essencial=false")
+        mvc.perform(get("/insumos?essencial=false")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(3));
 
-        mvc.perform(get("/medicamentos?busca=morfina")
+        mvc.perform(get("/insumos?busca=morfina")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].codigo").value("MED-007"));
+                .andExpect(jsonPath("$.data[0].codigo").value("INS-007"));
     }
 
     @Test
-    @DisplayName("Filtro ?unidadeId= lista so medicamentos com posicao na unidade")
+    @DisplayName("Filtro ?unidadeId= lista so insumos com posicao na unidade")
     void filtroPorUnidade() throws Exception {
         UUID atendidaId = unidadeRepository.findAll().stream()
                 .filter(u -> !u.isHub()).findFirst().orElseThrow().getId();
@@ -129,43 +129,43 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
                 .filter(Unidade::isHub).findFirst().orElseThrow().getId();
 
         // Unidade atendida recebe posicao de todos os 30 itens semeados (EstoqueSeeder).
-        mvc.perform(get("/medicamentos").param("unidadeId", atendidaId.toString())
+        mvc.perform(get("/insumos").param("unidadeId", atendidaId.toString())
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(30));
 
         // Hub logistico (CAHOSP) nao consome diretamente — sem posicoes, lista vazia.
-        mvc.perform(get("/medicamentos").param("unidadeId", hubId.toString())
+        mvc.perform(get("/insumos").param("unidadeId", hubId.toString())
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(0));
 
-        // Combina com os demais filtros (familia) dentro da unidade.
-        mvc.perform(get("/medicamentos")
+        // Combina com os demais filtros (categoria) dentro da unidade.
+        mvc.perform(get("/insumos")
                         .param("unidadeId", atendidaId.toString())
-                        .param("familia", "Antibióticos")
+                        .param("categoria", "Antibióticos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(5));
     }
 
     @Test
-    @DisplayName("TI cria, atualiza e desativa medicamento")
+    @DisplayName("TI cria, atualiza e desativa insumo")
     void fluxoTi() throws Exception {
-        String codigo = "MED-T" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
+        String codigo = "INS-T" + UUID.randomUUID().toString().substring(0, 4).toUpperCase();
         String corpo = """
                 {"codigo":"%s","nome":"Cefalexina 500mg","apresentacao":"Comprimido",
-                 "familia":"Antibióticos","unidadeMedida":"cp","criticidade":"Média",
+                 "categoria":"Antibióticos","unidadeMedida":"cp","criticidade":"Média",
                  "essencial":true}
                 """.formatted(codigo);
 
-        MvcResult criado = mvc.perform(post("/medicamentos")
+        MvcResult criado = mvc.perform(post("/insumos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(corpo))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.codigo").value(codigo))
-                .andExpect(jsonPath("$.data.familia").value("Antibióticos"))
+                .andExpect(jsonPath("$.data.categoria").value("Antibióticos"))
                 .andExpect(jsonPath("$.data.criticidade").value("Média"))
                 .andReturn();
         String id = objectMapper.readTree(criado.getResponse().getContentAsString())
@@ -173,17 +173,17 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
 
         String atualizado = """
                 {"codigo":"%s","nome":"Cefalexina 500mg","apresentacao":"Comprimido",
-                 "familia":"Antibióticos","unidadeMedida":"cp","criticidade":"Alta",
+                 "categoria":"Antibióticos","unidadeMedida":"cp","criticidade":"Alta",
                  "essencial":true}
                 """.formatted(codigo);
-        mvc.perform(put("/medicamentos/" + id)
+        mvc.perform(put("/insumos/" + id)
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(atualizado))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.criticidade").value("Alta"));
 
-        mvc.perform(patch("/medicamentos/" + id + "/status")
+        mvc.perform(patch("/insumos/" + id + "/status")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"ativo\":false}"))
@@ -194,12 +194,12 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("OPERADOR nao pode escrever — 403 ACESSO_NEGADO")
     void operadorNaoEscreve() throws Exception {
-        mvc.perform(post("/medicamentos")
+        mvc.perform(post("/insumos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"codigo":"MED-XX","nome":"x","apresentacao":"x",
-                                 "familia":"Antibióticos","unidadeMedida":"cp",
+                                {"codigo":"INS-XX","nome":"x","apresentacao":"x",
+                                 "categoria":"Antibióticos","unidadeMedida":"cp",
                                  "criticidade":"Alta","essencial":true}
                                 """))
                 .andExpect(status().isForbidden())
@@ -209,7 +209,7 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Sem token devolve 401")
     void semToken() throws Exception {
-        mvc.perform(get("/medicamentos"))
+        mvc.perform(get("/insumos"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.codigo").value("NAO_AUTENTICADO"));
     }
@@ -217,12 +217,12 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Codigo duplicado devolve 409 CONFLITO")
     void codigoDuplicado() throws Exception {
-        mvc.perform(post("/medicamentos")
+        mvc.perform(post("/insumos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"codigo":"MED-001","nome":"Repetido","apresentacao":"x",
-                                 "familia":"Antibióticos","unidadeMedida":"cp",
+                                {"codigo":"INS-001","nome":"Repetido","apresentacao":"x",
+                                 "categoria":"Antibióticos","unidadeMedida":"cp",
                                  "criticidade":"Alta","essencial":true}
                                 """))
                 .andExpect(status().isConflict())
@@ -232,12 +232,12 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Body invalido devolve 400 VALIDACAO")
     void bodyInvalido() throws Exception {
-        mvc.perform(post("/medicamentos")
+        mvc.perform(post("/insumos")
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenTi))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"codigo":"","nome":"","apresentacao":"",
-                                 "familia":"Antibióticos","unidadeMedida":"",
+                                 "categoria":"Antibióticos","unidadeMedida":"",
                                  "criticidade":"Alta","essencial":false}
                                 """))
                 .andExpect(status().isBadRequest())
@@ -247,7 +247,7 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
     @Test
     @DisplayName("Detalhar id inexistente devolve 404")
     void detalharInexistente() throws Exception {
-        mvc.perform(get("/medicamentos/" + UUID.randomUUID())
+        mvc.perform(get("/insumos/" + UUID.randomUUID())
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.codigo").value("NAO_ENCONTRADO"));

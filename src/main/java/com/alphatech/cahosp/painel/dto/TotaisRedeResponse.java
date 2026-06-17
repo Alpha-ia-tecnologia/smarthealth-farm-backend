@@ -12,7 +12,7 @@ import java.math.BigDecimal;
  * o dashboard e a tela de alertas exibam o mesmo numero.
  */
 public record TotaisRedeResponse(
-        long medicamentos,
+        long insumos,
         long unidades,
         long alertasAbertos,
         long alertasAtivos,

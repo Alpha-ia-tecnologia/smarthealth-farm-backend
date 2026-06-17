@@ -3,7 +3,7 @@
 API da plataforma **Smart Health CAHOSP** — **gestão preditiva da cadeia farmacêutica** da
 Central de Abastecimento Hospitalar (**CAHOSP / EMSERH-MA**). Atende o frontend
 [`../smarthealth-farm`](../smarthealth-farm) e cobre os **62 requisitos funcionais** (`RF-*`)
-do Edital FAPEMA GovIA — Desafio Tecnológico 2: previsão de demanda de medicamentos, controle
+do Edital FAPEMA GovIA — Desafio Tecnológico 2: previsão de demanda de insumos, controle
 de estoque por lote, alertas de desabastecimento/vencimento, recomendações de
 reposição/redistribuição entre unidades, indicadores de projeto, ingestão e qualidade de dados,
 integração com sistemas EMSERH e segurança/LGPD.
@@ -32,10 +32,10 @@ integração com sistemas EMSERH e segurança/LGPD.
 >   Regra: o TI autenticado não pode desativar a própria conta (422). `Perfil` serializa/aceita o
 >   rótulo pt-BR no JSON. Reaproveita a tabela `usuario` (sem nova migration).
 > - ✅ **Fase 3 — Catálogo** (RF-DAD-06): `Unidade` (porte, conectividade, hub, ativo) e
->   `Medicamento` (código de negócio `MED-NNN`, família, criticidade, essencial, ativo) com
+>   `Insumo` (código de negócio `INS-NNN`, categoria, criticidade, essencial, ativo) com
 >   migration `V2__catalogo.sql` e **seeders idempotentes** espelhando o front (8 unidades,
->   30 medicamentos). Endpoints `/unidades` e `/medicamentos`: leitura para qualquer autenticado,
->   escrita restrita a `TI`; filtros por enum aceitam o rótulo pt-BR (`?familia=Antibióticos`).
+>   30 insumos). Endpoints `/unidades` e `/insumos`: leitura para qualquer autenticado,
+>   escrita restrita a `TI`; filtros por enum aceitam o rótulo pt-BR (`?categoria=Antibióticos`).
 >   56 testes verdes (27 unitários + 29 integração).
 > - ✅ **Fase 4 — Estoque** (RF-EST): `Lote` (validade/fabricante), `Movimentacao` (livro-razão
 >   **imutável**: Entrada/Saída/Transferência/Ajuste) e `PosicaoEstoque` (parâmetros de
@@ -54,18 +54,18 @@ integração com sistemas EMSERH e segurança/LGPD.
 > - ✅ **Fase 6 — Alertas** (RF-ALE): `Alerta` (tipo `Desabastecimento`/`Vencimento`, `Severidade`,
 >   `StatusAlerta`, destinatários por `Perfil` via `@ElementCollection`, FK opcional para o `Lote`).
 >   **Motor de geração por regra** (`GeradorAlerta`): desabastecimento a partir do estoque/cobertura
->   (medicamento essencial em nível crítico) e vencimento a partir dos lotes na janela de 60 dias;
+>   (insumo essencial em nível crítico) e vencimento a partir dos lotes na janela de 60 dias;
 >   `CalculadoraAlerta` (bandas de severidade) pura/testável. Endpoints `/alertas` (+ filtros tipo/
->   severidade/status/unidade/medicamento/busca), `/alertas/resumo` (KPIs), `PATCH /alertas/{id}/status`
+>   severidade/status/unidade/insumo/busca), `/alertas/resumo` (KPIs), `PATCH /alertas/{id}/status`
 >   (tratamento Aberto→Em tratamento→Resolvido, resolvido é terminal) e `POST /alertas/gerar`
 >   (**restrito a Gestor** — regenera renovando os abertos e preservando os já tratados). Migration
 >   `V5__alerta.sql` + seeder (106 alertas demo). Handler global para corpo inválido (400). 100 testes verdes.
 > - ✅ **Fase 7 — Recomendações** (RF-REC): `Recomendacao` (tipo `Reposição`/`Redistribuição`,
 >   `OrigemMotor` Regras/IA, `Prioridade`, `StatusRecomendacao`, `economiaEstimada` em `BigDecimal` R$,
->   FK para medicamento/unidade destino e origem opcional). **Motor de geração** (`GeradorRecomendacao`):
+>   FK para insumo/unidade destino e origem opcional). **Motor de geração** (`GeradorRecomendacao`):
 >   redistribuição entre unidade crítica e unidade com excedente, e reposição dimensionada até o
 >   estoque máximo; `CalculadoraRecomendacao` (dimensionamento) pura/testável. Endpoints
->   `/recomendacoes` (+ filtros tipo/status/motor/prioridade/unidade/medicamento/busca),
+>   `/recomendacoes` (+ filtros tipo/status/motor/prioridade/unidade/insumo/busca),
 >   `/recomendacoes/resumo` (KPIs: pendentes, economia potencial, geradas por IA, taxa de adesão),
 >   `POST /recomendacoes/{id}/aprovar` e `/executar` (ciclo Pendente→Aprovada→Executada) e
 >   `POST /recomendacoes/gerar` — **todas as ações restritas a Gestor**. Migration `V6__recomendacao.sql`
@@ -80,14 +80,14 @@ integração com sistemas EMSERH e segurança/LGPD.
 > - ✅ **Fase 9 — Painel/Dashboard** (RF-DASH): agregações de dashboard gerencial e painel
 >   operacional sob `/painel` e `/painel/operacional`. `CalculadoraPainel` (cobertura e status
 >   por unidade) pura/testável; `PainelService` consolida totais da rede, cobertura por unidade,
->   série agregada de previsão (medicamento mais crítico), filas de alertas e recomendações.
+>   série agregada de previsão (insumo mais crítico), filas de alertas e recomendações.
 >   Somente leitura — qualquer autenticado. 130 testes verdes.
 > - ✅ **Fase 10 — Ingestão de Dados** (RF-DAD): `FonteDado` (status/qualidade/procedência,
->   `ultimaIngestao` como `Instant`) e `QualidadeFamilia` (maturidade/completude/consistência/
->   granularidade/lacunas por família terapêutica). `CalculadoraIngestao` (qualidade média)
+>   `ultimaIngestao` como `Instant`) e `QualidadeCategoria` (maturidade/completude/consistência/
+>   granularidade/lacunas por categoria de insumo). `CalculadoraIngestao` (qualidade média)
 >   pura/testável. Endpoints `/ingestao/fontes`, `/ingestao/qualidade` e `/ingestao/resumo`
 >   (KPIs: registros, fontes sincronizadas, qualidade média, anonimização LGPD ativa).
->   Migration `V8__ingestao.sql` + seeder (6 fontes × 8 famílias). Somente leitura. 136 testes verdes.
+>   Migration `V8__ingestao.sql` + seeder (6 fontes × 8 categorias). Somente leitura. 136 testes verdes.
 > - ✅ **Fase 11 — Integração EMSERH** (RF-INT): `IntegracaoApi` (status, latência, `ModoIntegracao`
 >   Online/Offline-buffer/Reconciliando, buffer offline) e `ProvedorIa` (papel, custo por 1k tokens,
 >   anonimização) do AI Gateway. `CalculadoraIntegracao` (latência média das conexões ativas)
@@ -206,7 +206,7 @@ Listas de grande volume são **paginadas no servidor** (parâmetros padrão do S
 GET /estoque?page=0&size=10&sort=quantidade,desc&busca=ceftri
 ```
 
-- `page` (base 0, default 0) · `size` (default 10) · `sort=campo,(asc|desc)` (ex.: `sort=medicamento.nome`).
+- `page` (base 0, default 0) · `size` (default 10) · `sort=campo,(asc|desc)` (ex.: `sort=insumo.nome`).
 - O envelope devolve **a página em `data`** e o **total de elementos do conjunto em `total`** (não o
   tamanho da página) — o cliente calcula o número de páginas a partir de `total`.
 - Filtros e ordenação são aplicados **no banco** junto com a paginação. Para campos derivados
@@ -251,7 +251,7 @@ Governança de dados somente leitura sob `/api/ingestao`, disponível para **qua
 | Método | Rota | Descrição |
 |---|---|---|
 | `GET` | `/ingestao/fontes` | Lista fontes de dados (status, volume, qualidade, procedência, última ingestão). |
-| `GET` | `/ingestao/qualidade` | Maturidade e qualidade da base histórica por família terapêutica. |
+| `GET` | `/ingestao/qualidade` | Maturidade e qualidade da base histórica por categoria de insumo. |
 | `GET` | `/ingestao/resumo` | KPIs: registros ingeridos, fontes sincronizadas, qualidade média, anonimização LGPD. |
 
 ---
@@ -262,7 +262,7 @@ Agregações somente leitura sob `/api/painel`, disponível para **qualquer aute
 
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/painel` | Dashboard gerencial: totais da rede, cobertura por unidade, série agregada de previsão (medicamento mais crítico), alertas recentes e recomendações pendentes. |
+| `GET` | `/painel` | Dashboard gerencial: totais da rede, cobertura por unidade, série agregada de previsão (insumo mais crítico), alertas recentes e recomendações pendentes. |
 | `GET` | `/painel/operacional` | Painel operacional: situação por unidade (cobertura, críticos, alertas, conectividade), fila de alertas ativos e recomendações em aberto. |
 
 ---
@@ -292,7 +292,7 @@ Mapeados 1:1 com as telas do frontend e suas faixas de requisitos funcionais (`R
 | Domínio | Rotas `/api` | Tela do front | RF |
 |---|---|---|---|
 | Painel & Indicadores | `/painel`, `/indicadores` | Dashboard, Operacional, Indicadores | RF-DASH, RF-IND |
-| Medicamentos | `/medicamentos` | (catálogo, usado em todas) | — |
+| Insumos | `/insumos` | (catálogo, usado em todas) | — |
 | Unidades | `/unidades` | (rede EMSERH) | RF-DAD-06 |
 | Estoque & Lotes | `/estoque`, `/lotes`, `/movimentacoes` | Estoque & Lotes | RF-EST-01..06 |
 | Previsão de Demanda | `/previsoes` | Previsão de Demanda | RF-PRV-01..09 |
@@ -304,7 +304,7 @@ Mapeados 1:1 com as telas do frontend e suas faixas de requisitos funcionais (`R
 | Administração | `/admin/usuarios` | Administração | RF-ADM-01..04 |
 | IA (gateway) | `/ia/chat` | (transversal) | RF-INT, RF-SEG-04 |
 
-**Entidades centrais:** `Medicamento` e `Unidade` (incluindo a CAHOSP central) — referenciadas
+**Entidades centrais:** `Insumo` e `Unidade` (incluindo a CAHOSP central) — referenciadas
 por FK em estoque, previsão, alertas e recomendações.
 
 ### Ordem de implementação sugerida
@@ -312,7 +312,7 @@ por FK em estoque, previsão, alertas e recomendações.
 Por dependência (base antes dos consumidores):
 
 1. `comum` (envelope + tratamento de erro) → `seguranca` (JWT/RBAC) → `usuario` (auth/admin)
-2. `unidade` → `medicamento`
+2. `unidade` → `insumo`
 3. `estoque` (lote/movimentação/posição) → `previsao` → `alerta` → `recomendacao`
 4. `indicador` → `painel` → `ingestao` → `integracao` → `ia` → `seguranca/auditoria`
 
@@ -357,7 +357,7 @@ src/main/java/com/alphatech/cahosp/
 ├── comum/          # ApiResponse<T>, exceções, GlobalExceptionHandler
 ├── config/         # CORS, OpenAPI, beans de IA, JPA Auditing
 ├── seguranca/      # SecurityConfig, JWT, RBAC, auditoria/LGPD
-└── <dominio>/      # unidade, medicamento, estoque, previsao, alerta,
+└── <dominio>/      # unidade, insumo, estoque, previsao, alerta,
                     # recomendacao, indicador, ingestao, integracao,
                     # ia, painel, usuario
     ├── <X>Controller.java

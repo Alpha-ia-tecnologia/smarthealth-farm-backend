@@ -5,8 +5,8 @@ import com.alphatech.cahosp.alerta.dominio.StatusAlerta;
 import com.alphatech.cahosp.alerta.dominio.TipoAlerta;
 import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
 import com.alphatech.cahosp.estoque.dominio.TipoMovimentacao;
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
 import com.alphatech.cahosp.previsao.dominio.Drift;
 import com.alphatech.cahosp.recomendacao.dominio.OrigemMotor;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
@@ -21,7 +21,7 @@ import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
- * Conversao de enums recebidos como query param (ex.: {@code ?familia=Antibióticos}).
+ * Conversao de enums recebidos como query param (ex.: {@code ?categoria=Antibióticos}).
  *
  * <p>O Spring converte enum por {@code name()} ({@code ANTIBIOTICOS}); o {@code @JsonCreator}
  * dos enums so vale para o corpo JSON. Aqui registramos conversores que delegam ao
@@ -34,7 +34,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addFormatters(FormatterRegistry registry) {
         registry.addConverter(String.class, Perfil.class, Perfil::fromJson);
-        registry.addConverter(String.class, FamiliaTerapeutica.class, FamiliaTerapeutica::fromJson);
+        registry.addConverter(String.class, CategoriaInsumo.class, CategoriaInsumo::fromJson);
         registry.addConverter(String.class, Criticidade.class, Criticidade::fromJson);
         registry.addConverter(String.class, Porte.class, Porte::fromJson);
         registry.addConverter(String.class, Conectividade.class, Conectividade::fromJson);

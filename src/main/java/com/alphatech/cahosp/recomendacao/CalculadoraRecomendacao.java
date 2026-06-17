@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.recomendacao;
 
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import org.springframework.stereotype.Component;
 
@@ -57,7 +57,7 @@ public class CalculadoraRecomendacao {
         return quantidade > nivelCritico * FATOR_EXCEDENTE;
     }
 
-    /** Prioridade da reposicao pela criticidade do medicamento (RF-REC). */
+    /** Prioridade da reposicao pela criticidade do insumo (RF-REC). */
     public Prioridade prioridadePorCriticidade(Criticidade criticidade) {
         return criticidade == Criticidade.ALTA ? Prioridade.ESSENCIAL : Prioridade.IMPORTANTE;
     }

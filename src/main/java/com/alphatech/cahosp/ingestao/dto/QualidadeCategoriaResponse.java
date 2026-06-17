@@ -1,17 +1,17 @@
 package com.alphatech.cahosp.ingestao.dto;
 
 import com.alphatech.cahosp.ingestao.dominio.GranularidadeDado;
-import com.alphatech.cahosp.ingestao.dominio.QualidadeFamilia;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.ingestao.dominio.QualidadeCategoria;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
 
 import java.util.UUID;
 
 /**
- * Cartao de maturidade/qualidade por familia terapeutica (RF-DAD-04).
+ * Cartao de maturidade/qualidade por categoria (RF-DAD-04).
  */
-public record QualidadeFamiliaResponse(
+public record QualidadeCategoriaResponse(
         UUID id,
-        FamiliaTerapeutica familia,
+        CategoriaInsumo categoria,
         int maturidade,
         int completude,
         int consistencia,
@@ -19,10 +19,10 @@ public record QualidadeFamiliaResponse(
         int lacunas
 ) {
 
-    public static QualidadeFamiliaResponse de(QualidadeFamilia qualidade) {
-        return new QualidadeFamiliaResponse(
+    public static QualidadeCategoriaResponse de(QualidadeCategoria qualidade) {
+        return new QualidadeCategoriaResponse(
                 qualidade.getId(),
-                qualidade.getFamilia(),
+                qualidade.getCategoria(),
                 qualidade.getMaturidade(),
                 qualidade.getCompletude(),
                 qualidade.getConsistencia(),

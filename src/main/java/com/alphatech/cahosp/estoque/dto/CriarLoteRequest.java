@@ -13,8 +13,8 @@ import java.util.UUID;
  * no livro-razao.
  */
 public record CriarLoteRequest(
-        @NotNull(message = "O medicamento e obrigatorio.")
-        UUID medicamentoId,
+        @NotNull(message = "O insumo e obrigatorio.")
+        UUID insumoId,
 
         @NotNull(message = "A unidade e obrigatoria.")
         UUID unidadeId,

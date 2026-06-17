@@ -11,7 +11,7 @@ import com.alphatech.cahosp.estoque.LoteRepository;
 import com.alphatech.cahosp.estoque.PosicaoEstoqueRepository;
 import com.alphatech.cahosp.estoque.dominio.Lote;
 import com.alphatech.cahosp.estoque.dominio.PosicaoEstoque;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,7 +30,7 @@ import java.util.UUID;
  * ({@link LimiarAlerta}, RF-ALE-03) — alterar um limiar muda o proximo ciclo de geracao:
  *
  * <ul>
- *   <li><strong>Desabastecimento:</strong> posicao de medicamento <em>essencial</em> com saldo
+ *   <li><strong>Desabastecimento:</strong> posicao de insumo <em>essencial</em> com saldo
  *       abaixo do percentual configurado do estoque minimo; severidade pela cobertura restante.</li>
  *   <li><strong>Vencimento:</strong> lote com saldo e validade dentro da janela configurada;
  *       severidade pela antecedencia.</li>
@@ -38,7 +38,7 @@ import java.util.UUID;
  *
  * <p><strong>Idempotencia/regeneracao:</strong> os alertas ainda {@code ABERTO} sao removidos e
  * recalculados (sempre refletem a condicao corrente). Alertas ja em tratamento ou resolvidos sao
- * preservados — e o motor evita recriar um alerta cuja chave natural ({tipo, medicamento, unidade}
+ * preservados — e o motor evita recriar um alerta cuja chave natural ({tipo, insumo, unidade}
  * ou {tipo, lote}) ja exista, para nao duplicar um caso que alguem ja esta tratando.
  */
 @Service
@@ -95,16 +95,16 @@ public class GeradorAlerta {
                 desabastecimento, vencimento, abertosRenovados, totalAtivo, mensagem);
     }
 
-    /** RF-ALE-01: medicamento essencial com saldo abaixo do limiar vira alerta de desabastecimento. */
+    /** RF-ALE-01: insumo essencial com saldo abaixo do limiar vira alerta de desabastecimento. */
     private long gerarDesabastecimento(LimiarAlerta limiares, List<Alerta> acc) {
-        // Chave natural {medicamento, unidade} ja existente — dedup em memoria (1 query, sem N+1).
+        // Chave natural {insumo, unidade} ja existente — dedup em memoria (1 query, sem N+1).
         Set<String> chaves = new HashSet<>();
-        for (Object[] chave : alertaRepository.chavesPorMedicamentoEUnidade(TipoAlerta.DESABASTECIMENTO)) {
+        for (Object[] chave : alertaRepository.chavesPorInsumoEUnidade(TipoAlerta.DESABASTECIMENTO)) {
             chaves.add(chave[0] + ":" + chave[1]);
         }
         long gerados = 0;
         for (PosicaoEstoque pos : posicaoRepository.findAllComRelacionamentos()) {
-            Medicamento med = pos.getMedicamento();
+            Insumo med = pos.getInsumo();
             boolean abaixoDoMinimo = calculadoraAlerta.abaixoDoEstoqueMinimo(
                     pos.getQuantidade(), pos.getNivelCritico(), limiares.getPercentualEstoqueMinimo());
             if (!abaixoDoMinimo || !med.isEssencial()) {
@@ -137,7 +137,7 @@ public class GeradorAlerta {
             }
             long dias = calculadoraEstoque.diasParaVencer(lote.getValidade(), referencia);
             Severidade severidade = calculadoraAlerta.severidadePorVencimento(dias, limiares);
-            Medicamento med = lote.getMedicamento();
+            Insumo med = lote.getInsumo();
             String mensagem = String.format(
                     "Lote %s (%d %s) vence em %d dia(s).",
                     lote.getNumeroLote(), lote.getQuantidade(), med.getUnidadeMedida(), dias);

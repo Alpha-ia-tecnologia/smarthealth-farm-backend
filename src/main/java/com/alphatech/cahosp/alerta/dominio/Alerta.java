@@ -2,7 +2,7 @@ package com.alphatech.cahosp.alerta.dominio;
 
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
 import com.alphatech.cahosp.estoque.dominio.Lote;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import jakarta.persistence.CollectionTable;
@@ -30,13 +30,13 @@ import java.util.UUID;
 /**
  * Alerta operacional gerado por regra (RF-ALE). Dois tipos:
  * <ul>
- *   <li>{@link TipoAlerta#DESABASTECIMENTO} — derivado do estoque/cobertura (medicamento essencial
+ *   <li>{@link TipoAlerta#DESABASTECIMENTO} — derivado do estoque/cobertura (insumo essencial
  *       com saldo abaixo do nivel critico). RF-ALE-01.</li>
  *   <li>{@link TipoAlerta#VENCIMENTO} — derivado de um {@link Lote} proximo da validade. RF-ALE-02.</li>
  * </ul>
  *
  * <p>O alerta e um dado <strong>derivado</strong> (gerado pelo motor {@code GeradorAlerta} a partir
- * do estoque, da previsao e dos lotes), nao um dado lancado a mao. {@link #medicamento} e
+ * do estoque, da previsao e dos lotes), nao um dado lancado a mao. {@link #insumo} e
  * {@link #unidade} sao referenciados por FK; {@link #lote} so existe no tipo vencimento. Os
  * {@link #destinatarios} (RF-ALE-04) sao um conjunto de {@link Perfil}.
  */
@@ -58,8 +58,8 @@ public class Alerta {
     private Severidade severidade;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_id", nullable = false)
@@ -101,11 +101,11 @@ public class Alerta {
         // JPA
     }
 
-    public Alerta(TipoAlerta tipo, Severidade severidade, Medicamento medicamento, Unidade unidade,
+    public Alerta(TipoAlerta tipo, Severidade severidade, Insumo insumo, Unidade unidade,
                   Lote lote, String mensagem, Set<Perfil> destinatarios, int diasParaEvento) {
         this.tipo = tipo;
         this.severidade = severidade;
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidade = unidade;
         this.lote = lote;
         this.mensagem = mensagem;
@@ -152,8 +152,8 @@ public class Alerta {
         return severidade;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidade() {

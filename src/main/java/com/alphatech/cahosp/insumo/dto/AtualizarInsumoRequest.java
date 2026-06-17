@@ -1,13 +1,13 @@
-package com.alphatech.cahosp.medicamento.dto;
+package com.alphatech.cahosp.insumo.dto;
 
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
-import com.alphatech.cahosp.medicamento.dominio.FamiliaTerapeutica;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.CategoriaInsumo;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-/** Atualizacao de medicamento (RF-DAD-06). Status tem endpoint proprio. */
-public record AtualizarMedicamentoRequest(
+/** Atualizacao de insumo (RF-DAD-06). Status tem endpoint proprio. */
+public record AtualizarInsumoRequest(
         @NotBlank(message = "O codigo e obrigatorio.")
         @Size(max = 30, message = "O codigo deve ter no maximo 30 caracteres.")
         String codigo,
@@ -18,8 +18,8 @@ public record AtualizarMedicamentoRequest(
         @NotBlank(message = "A apresentacao e obrigatoria.")
         String apresentacao,
 
-        @NotNull(message = "A familia terapeutica e obrigatoria.")
-        FamiliaTerapeutica familia,
+        @NotNull(message = "A categoria e obrigatoria.")
+        CategoriaInsumo categoria,
 
         @NotBlank(message = "A unidade de medida e obrigatoria.")
         @Size(max = 20, message = "A unidade de medida deve ter no maximo 20 caracteres.")

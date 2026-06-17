@@ -1,9 +1,9 @@
 -- RF-EST — estoque por lote, livro-razao de movimentacoes e posicao consolidada.
--- Lote e Movimentacao referenciam Medicamento e Unidade por FK (catalogo, V2).
+-- Lote e Movimentacao referenciam Insumo e Unidade por FK (catalogo, V2).
 
 create table lote (
     id             uuid         primary key,
-    medicamento_id uuid         not null references medicamento (id),
+    insumo_id uuid         not null references insumo (id),
     unidade_id     uuid         not null references unidade (id),
     numero_lote    varchar(40)  not null,
     validade       date         not null,
@@ -14,7 +14,7 @@ create table lote (
     constraint ck_lote_quantidade_nao_negativa check (quantidade >= 0)
 );
 
-create index ix_lote_medicamento on lote (medicamento_id);
+create index ix_lote_insumo on lote (insumo_id);
 create index ix_lote_unidade on lote (unidade_id);
 create index ix_lote_validade on lote (validade);
 
@@ -22,7 +22,7 @@ create index ix_lote_validade on lote (validade);
 create table movimentacao (
     id             uuid         primary key,
     lote_id        uuid         not null references lote (id),
-    medicamento_id uuid         not null references medicamento (id),
+    insumo_id uuid         not null references insumo (id),
     unidade_id     uuid         not null references unidade (id),
     tipo           varchar(20)  not null,
     quantidade     integer      not null,
@@ -36,13 +36,13 @@ create table movimentacao (
 );
 
 create index ix_movimentacao_lote on movimentacao (lote_id);
-create index ix_movimentacao_medicamento_unidade on movimentacao (medicamento_id, unidade_id);
+create index ix_movimentacao_insumo_unidade on movimentacao (insumo_id, unidade_id);
 create index ix_movimentacao_data on movimentacao (data_hora);
 
--- Posicao consolidada por (medicamento, unidade). quantidade = projecao do livro-razao.
+-- Posicao consolidada por (insumo, unidade). quantidade = projecao do livro-razao.
 create table posicao_estoque (
     id                              uuid        primary key,
-    medicamento_id                  uuid        not null references medicamento (id),
+    insumo_id                  uuid        not null references insumo (id),
     unidade_id                      uuid        not null references unidade (id),
     quantidade                      integer     not null,
     nivel_critico                   integer     not null,
@@ -51,7 +51,7 @@ create table posicao_estoque (
     tempo_medio_ressuprimento_dias  integer     not null,
     criado_em                       timestamptz not null,
     atualizado_em                   timestamptz not null,
-    constraint uk_posicao_med_unidade unique (medicamento_id, unidade_id),
+    constraint uk_posicao_insumo_unidade unique (insumo_id, unidade_id),
     constraint ck_posicao_quantidade_nao_negativa check (quantidade >= 0)
 );
 

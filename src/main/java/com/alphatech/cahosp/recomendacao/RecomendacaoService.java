@@ -2,8 +2,8 @@ package com.alphatech.cahosp.recomendacao;
 
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
 import com.alphatech.cahosp.comum.excecao.RegraNegocioException;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.recomendacao.dominio.OrigemMotor;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
@@ -38,20 +38,20 @@ public class RecomendacaoService {
     private final RecomendacaoRepository recomendacaoRepository;
     private final GeradorRecomendacao geradorRecomendacao;
     private final CalculadoraRecomendacao calculadora;
-    private final MedicamentoRepository medicamentoRepository;
+    private final InsumoRepository insumoRepository;
     private final UnidadeRepository unidadeRepository;
     private final RegistradorAuditoria auditoria;
 
     public RecomendacaoService(RecomendacaoRepository recomendacaoRepository,
                                GeradorRecomendacao geradorRecomendacao,
                                CalculadoraRecomendacao calculadora,
-                               MedicamentoRepository medicamentoRepository,
+                               InsumoRepository insumoRepository,
                                UnidadeRepository unidadeRepository,
                                RegistradorAuditoria auditoria) {
         this.recomendacaoRepository = recomendacaoRepository;
         this.geradorRecomendacao = geradorRecomendacao;
         this.calculadora = calculadora;
-        this.medicamentoRepository = medicamentoRepository;
+        this.insumoRepository = insumoRepository;
         this.unidadeRepository = unidadeRepository;
         this.auditoria = auditoria;
     }
@@ -62,26 +62,26 @@ public class RecomendacaoService {
      */
     public Page<RecomendacaoResponse> listar(TipoRecomendacao tipo, StatusRecomendacao status,
                                              OrigemMotor origemMotor, Prioridade prioridade,
-                                             UUID unidadeId, UUID medicamentoId, String busca,
+                                             UUID unidadeId, UUID insumoId, String busca,
                                              Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return recomendacaoRepository
-                .buscarComFiltros(tipo, status, origemMotor, prioridade, unidadeId, medicamentoId,
+                .buscarComFiltros(tipo, status, origemMotor, prioridade, unidadeId, insumoId,
                         termo, pageable)
                 .map(RecomendacaoResponse::de);
     }
 
-    /** KPIs do painel de recomendacoes, com filtros opcionais de unidade/medicamento (RF-REC-01/02/03/05). */
-    public ResumoRecomendacoesResponse resumo(UUID unidadeId, UUID medicamentoId) {
-        long total = recomendacaoRepository.contarPainel(null, null, unidadeId, medicamentoId);
-        long pendentes = recomendacaoRepository.contarPainel(StatusRecomendacao.PENDENTE, null, unidadeId, medicamentoId);
-        long aprovadas = recomendacaoRepository.contarPainel(StatusRecomendacao.APROVADA, null, unidadeId, medicamentoId);
-        long executadas = recomendacaoRepository.contarPainel(StatusRecomendacao.EXECUTADA, null, unidadeId, medicamentoId);
+    /** KPIs do painel de recomendacoes, com filtros opcionais de unidade/insumo (RF-REC-01/02/03/05). */
+    public ResumoRecomendacoesResponse resumo(UUID unidadeId, UUID insumoId) {
+        long total = recomendacaoRepository.contarPainel(null, null, unidadeId, insumoId);
+        long pendentes = recomendacaoRepository.contarPainel(StatusRecomendacao.PENDENTE, null, unidadeId, insumoId);
+        long aprovadas = recomendacaoRepository.contarPainel(StatusRecomendacao.APROVADA, null, unidadeId, insumoId);
+        long executadas = recomendacaoRepository.contarPainel(StatusRecomendacao.EXECUTADA, null, unidadeId, insumoId);
         // Adesão = aproveitadas (aprovadas + executadas); recusadas não contam como adesão.
         long aderiram = aprovadas + executadas;
         long geradasPorIA = recomendacaoRepository.contarPainel(
-                null, OrigemMotor.APRENDIZADO_MAQUINA, unidadeId, medicamentoId);
-        BigDecimal economia = recomendacaoRepository.somarEconomiaEstimadaFiltrada(unidadeId, medicamentoId)
+                null, OrigemMotor.APRENDIZADO_MAQUINA, unidadeId, insumoId);
+        BigDecimal economia = recomendacaoRepository.somarEconomiaEstimadaFiltrada(unidadeId, insumoId)
                 .setScale(2, RoundingMode.HALF_UP);
         int taxaAdesao = total == 0 ? 0 : Math.round((aderiram * 100f) / total);
         return new ResumoRecomendacoesResponse(
@@ -117,7 +117,7 @@ public class RecomendacaoService {
         if (req.unidadeOrigemId().equals(req.unidadeDestinoId())) {
             throw new RegraNegocioException("A unidade de origem deve ser diferente da de destino.");
         }
-        Medicamento medicamento = buscarMedicamento(req.medicamentoId());
+        Insumo insumo = buscarInsumo(req.insumoId());
         Unidade origem = buscarUnidade(req.unidadeOrigemId());
         Unidade destino = buscarUnidade(req.unidadeDestinoId());
 
@@ -127,7 +127,7 @@ public class RecomendacaoService {
         Prioridade prioridade = req.prioridade() == null ? Prioridade.IMPORTANTE : req.prioridade();
 
         Recomendacao recomendacao = new Recomendacao(
-                TipoRecomendacao.REDISTRIBUICAO, medicamento, destino, origem, req.quantidade(),
+                TipoRecomendacao.REDISTRIBUICAO, insumo, destino, origem, req.quantidade(),
                 justificativa, OrigemMotor.MANUAL, prioridade, calculadora.economiaManual(req.quantidade()));
         RecomendacaoResponse resposta = RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
         auditoria.registrar(CategoriaAuditoria.CRIAR_RECOMENDACAO, "recomendacao:" + resposta.id());
@@ -135,14 +135,14 @@ public class RecomendacaoService {
     }
 
     /**
-     * Edita uma recomendação ainda pendente (RF-REC-05 — acao de Gestor): medicamento, unidades e
+     * Edita uma recomendação ainda pendente (RF-REC-05 — acao de Gestor): insumo, unidades e
      * quantidade. A origem segue o tipo (obrigatória em redistribuição, nula em reposição) e a
      * economia é recalculada.
      */
     @Transactional
     public RecomendacaoResponse editar(UUID id, EditarRecomendacaoRequest req) {
         Recomendacao recomendacao = carregar(id);
-        Medicamento medicamento = buscarMedicamento(req.medicamentoId());
+        Insumo insumo = buscarInsumo(req.insumoId());
         Unidade destino = buscarUnidade(req.unidadeDestinoId());
 
         Unidade origem = null;
@@ -156,7 +156,7 @@ public class RecomendacaoService {
             origem = buscarUnidade(req.unidadeOrigemId());
         }
 
-        recomendacao.editar(medicamento, destino, origem, req.quantidade(),
+        recomendacao.editar(insumo, destino, origem, req.quantidade(),
                 calculadora.economiaManual(req.quantidade()));
         RecomendacaoResponse resposta = RecomendacaoResponse.de(recomendacaoRepository.save(recomendacao));
         auditoria.registrar(CategoriaAuditoria.EDITAR_RECOMENDACAO, "recomendacao:" + id);
@@ -179,9 +179,9 @@ public class RecomendacaoService {
         return geradorRecomendacao.gerar();
     }
 
-    private Medicamento buscarMedicamento(UUID id) {
-        return medicamentoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNaoEncontradoException("Medicamento nao encontrado: " + id + "."));
+    private Insumo buscarInsumo(UUID id) {
+        return insumoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Insumo nao encontrado: " + id + "."));
     }
 
     private Unidade buscarUnidade(UUID id) {

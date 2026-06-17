@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.previsao.dominio;
 
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -30,14 +30,14 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Previsao de demanda de um medicamento em uma unidade (RF-PRV). Guarda a assertividade
+ * Previsao de demanda de um insumo em uma unidade (RF-PRV). Guarda a assertividade
  * ({@link #mape}), o modelo/versao, o {@link #drift} e a {@link #serie} temporal (realizado x
  * previsto). RF-EST-04: o nivel critico do estoque se apoia nesta previsao.
  */
 @Entity
 @Table(name = "previsao",
-        uniqueConstraints = @UniqueConstraint(name = "uk_previsao_med_unidade",
-                columnNames = {"medicamento_id", "unidade_id"}))
+        uniqueConstraints = @UniqueConstraint(name = "uk_previsao_insumo_unidade",
+                columnNames = {"insumo_id", "unidade_id"}))
 @EntityListeners(AuditingEntityListener.class)
 public class Previsao {
 
@@ -49,8 +49,8 @@ public class Previsao {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "medicamento_id", nullable = false)
-    private Medicamento medicamento;
+    @JoinColumn(name = "insumo_id", nullable = false)
+    private Insumo insumo;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "unidade_id", nullable = false)
@@ -91,9 +91,9 @@ public class Previsao {
         // JPA
     }
 
-    public Previsao(Medicamento medicamento, Unidade unidade, int horizonteMeses, BigDecimal mape,
+    public Previsao(Insumo insumo, Unidade unidade, int horizonteMeses, BigDecimal mape,
                     String modelo, String versaoModelo, Drift drift, LocalDate calibradoEm) {
-        this.medicamento = medicamento;
+        this.insumo = insumo;
         this.unidade = unidade;
         this.horizonteMeses = horizonteMeses;
         this.mape = mape;
@@ -131,8 +131,8 @@ public class Previsao {
         return id;
     }
 
-    public Medicamento getMedicamento() {
-        return medicamento;
+    public Insumo getInsumo() {
+        return insumo;
     }
 
     public Unidade getUnidade() {

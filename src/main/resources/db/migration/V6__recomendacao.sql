@@ -4,7 +4,7 @@
 create table recomendacao (
     id                 uuid          primary key,
     tipo               varchar(20)   not null,
-    medicamento_id     uuid          not null references medicamento (id),
+    insumo_id     uuid          not null references insumo (id),
     unidade_destino_id uuid          not null references unidade (id),
     unidade_origem_id  uuid          references unidade (id),
     quantidade         integer       not null,
@@ -25,4 +25,4 @@ create index ix_recomendacao_status on recomendacao (status);
 create index ix_recomendacao_tipo on recomendacao (tipo);
 create index ix_recomendacao_origem_motor on recomendacao (origem_motor);
 create index ix_recomendacao_destino on recomendacao (unidade_destino_id);
-create index ix_recomendacao_medicamento on recomendacao (medicamento_id);
+create index ix_recomendacao_insumo on recomendacao (insumo_id);

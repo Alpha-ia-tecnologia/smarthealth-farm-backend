@@ -39,29 +39,29 @@ public class AlertaService {
 
     /**
      * Lista alertas, paginada, com filtros opcionais (tipo, severidade, status, unidade,
-     * medicamento, busca). A ordenacao default (mais urgentes primeiro) vem do controller.
+     * insumo, busca). A ordenacao default (mais urgentes primeiro) vem do controller.
      */
     public Page<AlertaResponse> listar(TipoAlerta tipo, Severidade severidade, StatusAlerta status,
-                                       UUID unidadeId, UUID medicamentoId, String busca,
+                                       UUID unidadeId, UUID insumoId, String busca,
                                        Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return alertaRepository
-                .buscarComFiltros(tipo, severidade, status, unidadeId, medicamentoId, termo, pageable)
+                .buscarComFiltros(tipo, severidade, status, unidadeId, insumoId, termo, pageable)
                 .map(AlertaResponse::de);
     }
 
-    /** KPIs do painel de alertas, com filtros opcionais de unidade/medicamento (RF-ALE-04/05). */
-    public ResumoAlertasResponse resumo(UUID unidadeId, UUID medicamentoId) {
-        long abertos = alertaRepository.contarPainel(null, null, StatusAlerta.ABERTO, null, unidadeId, medicamentoId);
+    /** KPIs do painel de alertas, com filtros opcionais de unidade/insumo (RF-ALE-04/05). */
+    public ResumoAlertasResponse resumo(UUID unidadeId, UUID insumoId) {
+        long abertos = alertaRepository.contarPainel(null, null, StatusAlerta.ABERTO, null, unidadeId, insumoId);
         long desabastecimento = alertaRepository.contarPainel(
-                TipoAlerta.DESABASTECIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+                TipoAlerta.DESABASTECIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, insumoId);
         long vencimento = alertaRepository.contarPainel(
-                TipoAlerta.VENCIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+                TipoAlerta.VENCIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, insumoId);
         long criticos = alertaRepository.contarPainel(
-                null, Severidade.CRITICO, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
-        long emTratamento = alertaRepository.contarPainel(null, null, StatusAlerta.EM_TRATAMENTO, null, unidadeId, medicamentoId);
-        long resolvidos = alertaRepository.contarPainel(null, null, StatusAlerta.RESOLVIDO, null, unidadeId, medicamentoId);
-        long total = alertaRepository.contarPainel(null, null, null, null, unidadeId, medicamentoId);
+                null, Severidade.CRITICO, null, StatusAlerta.RESOLVIDO, unidadeId, insumoId);
+        long emTratamento = alertaRepository.contarPainel(null, null, StatusAlerta.EM_TRATAMENTO, null, unidadeId, insumoId);
+        long resolvidos = alertaRepository.contarPainel(null, null, StatusAlerta.RESOLVIDO, null, unidadeId, insumoId);
+        long total = alertaRepository.contarPainel(null, null, null, null, unidadeId, insumoId);
         // "Ativos" = não resolvidos: é o card principal e fecha com os cards por tipo
         // (desabastecimento + vencimento == ativos) e com o todo (ativos + resolvidos == total).
         long ativos = abertos + emTratamento;

@@ -41,15 +41,15 @@ public class MovimentacaoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista movimentacoes, paginadas (filtros: medicamento, unidade, lote, tipo)")
+    @Operation(summary = "Lista movimentacoes, paginadas (filtros: insumo, unidade, lote, tipo)")
     public ResponseEntity<ApiResponse<List<MovimentacaoResponse>>> listar(
-            @RequestParam(required = false) UUID medicamentoId,
+            @RequestParam(required = false) UUID insumoId,
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID loteId,
             @RequestParam(required = false) TipoMovimentacao tipo,
             @PageableDefault(size = 10, sort = "dataHora", direction = Sort.Direction.DESC) Pageable pageable) {
         Page<MovimentacaoResponse> pagina =
-                consultaService.listarMovimentacoes(medicamentoId, unidadeId, loteId, tipo, pageable);
+                consultaService.listarMovimentacoes(insumoId, unidadeId, loteId, tipo, pageable);
         return ResponseEntity.ok(ApiResponse.pagina(pagina.getContent(), pagina.getTotalElements()));
     }
 

@@ -1,7 +1,7 @@
 package com.alphatech.cahosp.previsao;
 
 import com.alphatech.cahosp.comum.excecao.RecursoNaoEncontradoException;
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
 import com.alphatech.cahosp.previsao.dominio.Drift;
 import com.alphatech.cahosp.previsao.dominio.Previsao;
 import com.alphatech.cahosp.previsao.dto.PainelPrevisaoResponse;
@@ -41,31 +41,31 @@ public class PrevisaoService {
     }
 
     /**
-     * Lista previsoes, paginada, com filtros opcionais (unidade, medicamento, drift, busca).
-     * A ordenacao default (por medicamento) vem do controller. RF-PRV-01.
+     * Lista previsoes, paginada, com filtros opcionais (unidade, insumo, drift, busca).
+     * A ordenacao default (por insumo) vem do controller. RF-PRV-01.
      */
-    public Page<PrevisaoResumoResponse> listar(UUID unidadeId, UUID medicamentoId,
+    public Page<PrevisaoResumoResponse> listar(UUID unidadeId, UUID insumoId,
                                                Drift drift, String busca, Pageable pageable) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
         return previsaoRepository
-                .buscarComFiltros(unidadeId, medicamentoId, drift, termo, pageable)
+                .buscarComFiltros(unidadeId, insumoId, drift, termo, pageable)
                 .map(PrevisaoResumoResponse::de);
     }
 
     /** Detalha uma previsao com a serie temporal completa. RF-PRV-02. */
-    public PrevisaoDetalheResponse detalhar(UUID medicamentoId, UUID unidadeId) {
-        Previsao previsao = previsaoRepository.findDetalhe(medicamentoId, unidadeId)
+    public PrevisaoDetalheResponse detalhar(UUID insumoId, UUID unidadeId) {
+        Previsao previsao = previsaoRepository.findDetalhe(insumoId, unidadeId)
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
-                        "Previsao nao encontrada para o medicamento/unidade informados."));
+                        "Previsao nao encontrada para o insumo/unidade informados."));
         List<PontoSerieResponse> serie = previsao.getSerie().stream()
                 .map(PontoSerieResponse::de)
                 .toList();
         return new PrevisaoDetalheResponse(PrevisaoResumoResponse.de(previsao), serie);
     }
 
-    /** KPIs do painel de previsao, com filtros opcionais de unidade/medicamento. RF-PRV-04/05/06. */
-    public PainelPrevisaoResponse resumo(UUID unidadeId, UUID medicamentoId) {
-        List<Previsao> previsoes = previsaoRepository.findFiltradasComMedicamento(unidadeId, medicamentoId);
+    /** KPIs do painel de previsao, com filtros opcionais de unidade/insumo. RF-PRV-04/05/06. */
+    public PainelPrevisaoResponse resumo(UUID unidadeId, UUID insumoId) {
+        List<Previsao> previsoes = previsaoRepository.findFiltradasComInsumo(unidadeId, insumoId);
         long ativas = previsoes.size();
         long totalCriticos = previsoes.stream().filter(this::ehCritico).count();
         long criticosNaMeta = previsoes.stream()
@@ -89,7 +89,7 @@ public class PrevisaoService {
     }
 
     private boolean ehCritico(Previsao p) {
-        return p.getMedicamento().getCriticidade() == Criticidade.ALTA;
+        return p.getInsumo().getCriticidade() == Criticidade.ALTA;
     }
 
     private BigDecimal mediaMape(List<Previsao> previsoes) {

@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 public interface LoteRepository extends JpaRepository<Lote, UUID>, JpaSpecificationExecutor<Lote> {
 
-    List<Lote> findByMedicamentoIdAndUnidadeIdOrderByValidadeAsc(UUID medicamentoId, UUID unidadeId);
+    List<Lote> findByInsumoIdAndUnidadeIdOrderByValidadeAsc(UUID insumoId, UUID unidadeId);
 
     boolean existsByNumeroLoteIgnoreCase(String numeroLote);
 
@@ -25,26 +25,26 @@ public interface LoteRepository extends JpaRepository<Lote, UUID>, JpaSpecificat
 
     /**
      * Conta lotes com saldo proximos do vencimento (ate {@code validadeAte}), com filtro opcional
-     * de unidade/medicamento — KPI do painel filtrado. RF-DASH-01/02.
+     * de unidade/insumo — KPI do painel filtrado. RF-DASH-01/02.
      */
     @Query("""
             SELECT COUNT(l) FROM Lote l
             WHERE l.quantidade > 0 AND l.validade <= :validadeAte
               AND (:unidadeId IS NULL OR l.unidade.id = :unidadeId)
-              AND (:medicamentoId IS NULL OR l.medicamento.id = :medicamentoId)
+              AND (:insumoId IS NULL OR l.insumo.id = :insumoId)
             """)
     long contarProximosVencimento(@Param("validadeAte") LocalDate validadeAte,
                                   @Param("unidadeId") UUID unidadeId,
-                                  @Param("medicamentoId") UUID medicamentoId);
+                                  @Param("insumoId") UUID insumoId);
 
     /**
      * Lotes com saldo acima de {@code quantidade} e validade ate a data, ordenados pela validade,
-     * com medicamento e unidade ja carregados (fetch join). Usado pelo motor de alertas de
+     * com insumo e unidade ja carregados (fetch join). Usado pelo motor de alertas de
      * vencimento (RF-ALE-02) — evita N+1 nas relacoes lazy ao varrer os lotes.
      */
     @Query("""
             SELECT l FROM Lote l
-              JOIN FETCH l.medicamento
+              JOIN FETCH l.insumo
               JOIN FETCH l.unidade
             WHERE l.quantidade > :quantidade AND l.validade <= :validadeAte
             ORDER BY l.validade ASC

@@ -10,8 +10,8 @@ import com.alphatech.cahosp.estoque.dto.CriarLoteRequest;
 import com.alphatech.cahosp.estoque.dto.LoteResponse;
 import com.alphatech.cahosp.estoque.dto.MovimentacaoResponse;
 import com.alphatech.cahosp.estoque.dto.RegistrarMovimentacaoRequest;
-import com.alphatech.cahosp.medicamento.MedicamentoRepository;
-import com.alphatech.cahosp.medicamento.dominio.Medicamento;
+import com.alphatech.cahosp.insumo.InsumoRepository;
+import com.alphatech.cahosp.insumo.dominio.Insumo;
 import com.alphatech.cahosp.unidade.UnidadeRepository;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
 import org.springframework.stereotype.Service;
@@ -33,20 +33,20 @@ public class EstoqueMovimentacaoService {
     private final LoteRepository loteRepository;
     private final MovimentacaoRepository movimentacaoRepository;
     private final PosicaoEstoqueRepository posicaoEstoqueRepository;
-    private final MedicamentoRepository medicamentoRepository;
+    private final InsumoRepository insumoRepository;
     private final UnidadeRepository unidadeRepository;
     private final CalculadoraEstoque calculadora;
 
     public EstoqueMovimentacaoService(LoteRepository loteRepository,
                                       MovimentacaoRepository movimentacaoRepository,
                                       PosicaoEstoqueRepository posicaoEstoqueRepository,
-                                      MedicamentoRepository medicamentoRepository,
+                                      InsumoRepository insumoRepository,
                                       UnidadeRepository unidadeRepository,
                                       CalculadoraEstoque calculadora) {
         this.loteRepository = loteRepository;
         this.movimentacaoRepository = movimentacaoRepository;
         this.posicaoEstoqueRepository = posicaoEstoqueRepository;
-        this.medicamentoRepository = medicamentoRepository;
+        this.insumoRepository = insumoRepository;
         this.unidadeRepository = unidadeRepository;
         this.calculadora = calculadora;
     }
@@ -54,19 +54,19 @@ public class EstoqueMovimentacaoService {
     /** Cria um lote e registra a Entrada inicial no livro-razao. RF-EST-03. */
     @Transactional
     public LoteResponse criarLote(CriarLoteRequest req) {
-        Medicamento medicamento = medicamentoRepository.findById(req.medicamentoId())
+        Insumo insumo = insumoRepository.findById(req.insumoId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
-                        "Medicamento nao encontrado: " + req.medicamentoId() + "."));
+                        "Insumo nao encontrado: " + req.insumoId() + "."));
         Unidade unidade = unidadeRepository.findById(req.unidadeId())
                 .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Unidade nao encontrada: " + req.unidadeId() + "."));
 
-        Lote lote = loteRepository.save(new Lote(medicamento, unidade, req.numeroLote(),
+        Lote lote = loteRepository.save(new Lote(insumo, unidade, req.numeroLote(),
                 req.validade(), req.quantidade(), req.fabricante()));
 
         registrarLancamento(lote, TipoMovimentacao.ENTRADA, req.quantidade(),
                 req.responsavel(), req.documento());
-        posicao(medicamento, unidade).aplicarDelta(req.quantidade());
+        posicao(insumo, unidade).aplicarDelta(req.quantidade());
 
         return LoteResponse.de(lote, calculadora.diasParaVencer(lote.getValidade()));
     }
@@ -81,7 +81,7 @@ public class EstoqueMovimentacaoService {
         int delta = aplicarNoLote(lote, req.tipo(), req.quantidade());
         Movimentacao mov = registrarLancamento(lote, req.tipo(), req.quantidade(),
                 req.responsavel(), req.documento());
-        posicao(lote.getMedicamento(), lote.getUnidade()).aplicarDelta(delta);
+        posicao(lote.getInsumo(), lote.getUnidade()).aplicarDelta(delta);
 
         return MovimentacaoResponse.de(mov);
     }
@@ -125,11 +125,11 @@ public class EstoqueMovimentacaoService {
                 new Movimentacao(lote, tipo, quantidade, Instant.now(), responsavel, documento));
     }
 
-    /** Posicao da combinacao medicamento/unidade; cria uma zerada se ainda nao existir. */
-    private PosicaoEstoque posicao(Medicamento medicamento, Unidade unidade) {
+    /** Posicao da combinacao insumo/unidade; cria uma zerada se ainda nao existir. */
+    private PosicaoEstoque posicao(Insumo insumo, Unidade unidade) {
         return posicaoEstoqueRepository
-                .findByMedicamentoIdAndUnidadeId(medicamento.getId(), unidade.getId())
+                .findByInsumoIdAndUnidadeId(insumo.getId(), unidade.getId())
                 .orElseGet(() -> posicaoEstoqueRepository.save(
-                        new PosicaoEstoque(medicamento, unidade, 0, 0, 0, 0, 0)));
+                        new PosicaoEstoque(insumo, unidade, 0, 0, 0, 0, 0)));
     }
 }

@@ -2,7 +2,7 @@ package com.alphatech.cahosp.ingestao;
 
 import com.alphatech.cahosp.ingestao.dominio.StatusFonte;
 import com.alphatech.cahosp.ingestao.dto.FonteDadoResponse;
-import com.alphatech.cahosp.ingestao.dto.QualidadeFamiliaResponse;
+import com.alphatech.cahosp.ingestao.dto.QualidadeCategoriaResponse;
 import com.alphatech.cahosp.ingestao.dto.ResumoIngestaoResponse;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,19 +10,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * Regra de negocio da ingestao de dados (RF-DAD): consulta de fontes, qualidade por familia
- * terapeutica e KPIs do painel. Modulo de governanca, somente leitura.
+ * Regra de negocio da ingestao de dados (RF-DAD): consulta de fontes, qualidade por categoria
+ * de insumo e KPIs do painel. Modulo de governanca, somente leitura.
  */
 @Service
 @Transactional(readOnly = true)
 public class IngestaoService {
 
     private final FonteDadoRepository fonteRepository;
-    private final QualidadeFamiliaRepository qualidadeRepository;
+    private final QualidadeCategoriaRepository qualidadeRepository;
     private final CalculadoraIngestao calculadora;
 
     public IngestaoService(FonteDadoRepository fonteRepository,
-                           QualidadeFamiliaRepository qualidadeRepository,
+                           QualidadeCategoriaRepository qualidadeRepository,
                            CalculadoraIngestao calculadora) {
         this.fonteRepository = fonteRepository;
         this.qualidadeRepository = qualidadeRepository;
@@ -36,10 +36,10 @@ public class IngestaoService {
                 .toList();
     }
 
-    /** Lista a maturidade/qualidade por familia terapeutica (RF-DAD-04). */
-    public List<QualidadeFamiliaResponse> listarQualidade() {
-        return qualidadeRepository.findAllByOrderByFamiliaAsc().stream()
-                .map(QualidadeFamiliaResponse::de)
+    /** Lista a maturidade/qualidade por categoria (RF-DAD-04). */
+    public List<QualidadeCategoriaResponse> listarQualidade() {
+        return qualidadeRepository.findAllByOrderByCategoriaAsc().stream()
+                .map(QualidadeCategoriaResponse::de)
                 .toList();
     }
 

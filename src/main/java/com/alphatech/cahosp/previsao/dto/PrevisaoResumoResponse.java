@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.previsao.dto;
 
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
 import com.alphatech.cahosp.previsao.dominio.Drift;
 import com.alphatech.cahosp.previsao.dominio.Previsao;
 
@@ -9,14 +9,14 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 /**
- * Linha da tabela de previsoes do front (RF-PRV-01): medicamento (com criticidade), unidade,
+ * Linha da tabela de previsoes do front (RF-PRV-01): insumo (com criticidade), unidade,
  * MAPE, modelo/versao e drift.
  */
 public record PrevisaoResumoResponse(
         UUID id,
-        UUID medicamentoId,
-        String medicamentoCodigo,
-        String medicamentoNome,
+        UUID insumoId,
+        String insumoCodigo,
+        String insumoNome,
         Criticidade criticidade,
         UUID unidadeId,
         String unidadeSigla,
@@ -32,10 +32,10 @@ public record PrevisaoResumoResponse(
     public static PrevisaoResumoResponse de(Previsao p) {
         return new PrevisaoResumoResponse(
                 p.getId(),
-                p.getMedicamento().getId(),
-                p.getMedicamento().getCodigo(),
-                p.getMedicamento().getNome(),
-                p.getMedicamento().getCriticidade(),
+                p.getInsumo().getId(),
+                p.getInsumo().getCodigo(),
+                p.getInsumo().getNome(),
+                p.getInsumo().getCriticidade(),
                 p.getUnidade().getId(),
                 p.getUnidade().getSigla(),
                 p.getUnidade().getNome(),

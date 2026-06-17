@@ -1,6 +1,6 @@
 package com.alphatech.cahosp.recomendacao;
 
-import com.alphatech.cahosp.medicamento.dominio.Criticidade;
+import com.alphatech.cahosp.insumo.dominio.Criticidade;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

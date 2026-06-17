@@ -1,4 +1,4 @@
--- RF-DAD-06 — catalogo base: unidades hospitalares e medicamentos/insumos.
+-- RF-DAD-06 — catalogo base: unidades hospitalares e insumos/insumos.
 -- Referenciados por FK em estoque, previsao, alerta e recomendacao nas fases seguintes.
 
 create table unidade (
@@ -23,26 +23,26 @@ create table unidade (
 create index ix_unidade_hub on unidade (hub);
 create index ix_unidade_ativo on unidade (ativo);
 
-create table medicamento (
+create table insumo (
     id             uuid         primary key,
     codigo         varchar(30)  not null,
     nome           varchar(200) not null,
     apresentacao   varchar(80)  not null,
-    familia        varchar(40)  not null,
+    categoria        varchar(40)  not null,
     unidade_medida varchar(20)  not null,
     criticidade    varchar(10)  not null,
     essencial      boolean      not null,
     ativo          boolean      not null default true,
     criado_em      timestamptz  not null,
     atualizado_em  timestamptz  not null,
-    constraint uk_medicamento_codigo unique (codigo),
-    constraint ck_medicamento_familia check (familia in (
+    constraint uk_insumo_codigo unique (codigo),
+    constraint ck_insumo_categoria check (categoria in (
         'ANTIBIOTICOS', 'ANALGESICOS', 'ANTIVIRAIS', 'CARDIOVASCULAR',
         'SOROS_E_VACINAS', 'INSUMOS_MEDICOS', 'SAUDE_MENTAL', 'ANTIPARASITARIOS'
     )),
-    constraint ck_medicamento_criticidade check (criticidade in ('ALTA', 'MEDIA', 'BAIXA'))
+    constraint ck_insumo_criticidade check (criticidade in ('ALTA', 'MEDIA', 'BAIXA'))
 );
 
-create index ix_medicamento_familia on medicamento (familia);
-create index ix_medicamento_criticidade on medicamento (criticidade);
-create index ix_medicamento_ativo on medicamento (ativo);
+create index ix_insumo_categoria on insumo (categoria);
+create index ix_insumo_criticidade on insumo (criticidade);
+create index ix_insumo_ativo on insumo (ativo);
