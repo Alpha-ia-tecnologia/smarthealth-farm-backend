@@ -53,9 +53,20 @@ public interface PrevisaoRepository extends JpaRepository<Previsao, UUID> {
     @Query("SELECT p FROM Previsao p JOIN FETCH p.medicamento")
     List<Previsao> findTodasComMedicamento();
 
+    /** Variante de {@link #findTodasComMedicamento} com filtro opcional de unidade/medicamento (resumo filtrado). */
+    @Query("""
+            SELECT p FROM Previsao p
+              JOIN FETCH p.medicamento
+            WHERE (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR p.medicamento.id = :medicamentoId)
+            """)
+    List<Previsao> findFiltradasComMedicamento(@Param("unidadeId") UUID unidadeId,
+                                               @Param("medicamentoId") UUID medicamentoId);
+
     /**
-     * Serie agregada (soma por periodo) de um medicamento em todas as unidades — base do grafico
-     * consolidado do dashboard (RF-DASH/RF-PRV-02). Ordenada cronologicamente pela ordem do ponto.
+     * Serie agregada (soma por periodo) de um medicamento — base do grafico consolidado do
+     * dashboard (RF-DASH/RF-PRV-02). O filtro opcional {@code unidadeId} restringe a serie a uma
+     * unidade (dashboard filtrado); nulo soma todas as unidades. Ordenada cronologicamente.
      */
     @Query("""
             SELECT ps.periodo AS periodo,
@@ -65,10 +76,12 @@ public interface PrevisaoRepository extends JpaRepository<Previsao, UUID> {
                    SUM(ps.limiteSuperior) AS limiteSuperior
               FROM PontoSerie ps
              WHERE ps.previsao.medicamento.id = :medicamentoId
+               AND (:unidadeId IS NULL OR ps.previsao.unidade.id = :unidadeId)
              GROUP BY ps.periodo, ps.ordem
              ORDER BY ps.ordem
             """)
-    List<SeriePeriodoAgregada> agregarSeriePorMedicamento(@Param("medicamentoId") UUID medicamentoId);
+    List<SeriePeriodoAgregada> agregarSeriePorMedicamento(@Param("medicamentoId") UUID medicamentoId,
+                                                          @Param("unidadeId") UUID unidadeId);
 
     /** Previsao com a serie temporal carregada (drill-down/grafico). RF-PRV-02. */
     @Query("""

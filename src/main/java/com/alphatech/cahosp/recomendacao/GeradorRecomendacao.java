@@ -17,9 +17,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -60,12 +63,19 @@ public class GeradorRecomendacao {
     public GeracaoRecomendacoesResponse gerar() {
         long renovadas = recomendacaoRepository.deleteByStatus(StatusRecomendacao.PENDENTE);
 
-        List<PosicaoEstoque> posicoes = posicaoRepository.findAll();
+        // Posicoes com relacionamentos (sem N+1) e chaves existentes carregadas de uma vez (dedup em memoria).
+        List<PosicaoEstoque> posicoes = posicaoRepository.findAllComRelacionamentos();
+        Set<String> existentes = new HashSet<>();
+        for (Object[] c : recomendacaoRepository.chavesExistentes()) {
+            existentes.add(chave(c[0], c[1], c[2]));
+        }
         // Contador deterministico (espelha recSeq do front): dirige origem do motor e economia.
         int[] seq = {1};
+        List<Recomendacao> novos = new ArrayList<>();
 
-        long redistribuicao = gerarRedistribuicao(posicoes, seq);
-        long reposicao = gerarReposicao(posicoes, seq);
+        long redistribuicao = gerarRedistribuicao(posicoes, seq, existentes, novos);
+        long reposicao = gerarReposicao(posicoes, seq, existentes, novos);
+        recomendacaoRepository.saveAll(novos);
 
         long totalAtivo = recomendacaoRepository.count();
         String mensagem = String.format(
@@ -75,8 +85,14 @@ public class GeradorRecomendacao {
                 reposicao, redistribuicao, renovadas, totalAtivo, mensagem);
     }
 
+    /** Chave natural de deduplicacao de uma recomendacao: {tipo, medicamento, unidade destino}. */
+    private static String chave(Object tipo, Object medicamentoId, Object unidadeDestinoId) {
+        return tipo + ":" + medicamentoId + ":" + unidadeDestinoId;
+    }
+
     /** RF-REC-01: equilibra um medicamento essencial entre uma unidade em risco e outra com excedente. */
-    private long gerarRedistribuicao(List<PosicaoEstoque> posicoes, int[] seq) {
+    private long gerarRedistribuicao(List<PosicaoEstoque> posicoes, int[] seq,
+                                     Set<String> existentes, List<Recomendacao> acc) {
         Map<UUID, List<PosicaoEstoque>> porMedicamento = posicoes.stream()
                 .collect(Collectors.groupingBy(p -> p.getMedicamento().getId()));
 
@@ -101,8 +117,7 @@ public class GeradorRecomendacao {
                     || origem.getUnidade().getId().equals(destino.getUnidade().getId())) {
                 continue;
             }
-            if (recomendacaoRepository.existsByTipoAndMedicamentoIdAndUnidadeDestinoId(
-                    TipoRecomendacao.REDISTRIBUICAO, med.getId(), destino.getUnidade().getId())) {
+            if (!existentes.add(chave(TipoRecomendacao.REDISTRIBUICAO, med.getId(), destino.getUnidade().getId()))) {
                 continue;
             }
             int qtd = calculadoraRecomendacao.quantidadeRedistribuicao(
@@ -116,7 +131,7 @@ public class GeradorRecomendacao {
                     ? OrigemMotor.APRENDIZADO_MAQUINA : OrigemMotor.REGRAS;
             BigDecimal economia = economia(qtd, 12 + (seq[0] % 9));
 
-            recomendacaoRepository.save(new Recomendacao(TipoRecomendacao.REDISTRIBUICAO, med,
+            acc.add(new Recomendacao(TipoRecomendacao.REDISTRIBUICAO, med,
                     unidadeDestino, unidadeOrigem, qtd, justificativa, motor,
                     Prioridade.ESSENCIAL, economia));
             seq[0]++;
@@ -126,7 +141,8 @@ public class GeradorRecomendacao {
     }
 
     /** RF-REC-01: repoe ate o estoque maximo as posicoes fora do nivel ideal. */
-    private long gerarReposicao(List<PosicaoEstoque> posicoes, int[] seq) {
+    private long gerarReposicao(List<PosicaoEstoque> posicoes, int[] seq,
+                                Set<String> existentes, List<Recomendacao> acc) {
         List<PosicaoEstoque> ordenadas = posicoes.stream()
                 .sorted(Comparator.comparing((PosicaoEstoque p) -> p.getMedicamento().getCodigo())
                         .thenComparing(p -> p.getUnidade().getSigla()))
@@ -138,8 +154,7 @@ public class GeradorRecomendacao {
                 continue;
             }
             Medicamento med = pos.getMedicamento();
-            if (recomendacaoRepository.existsByTipoAndMedicamentoIdAndUnidadeDestinoId(
-                    TipoRecomendacao.REPOSICAO, med.getId(), pos.getUnidade().getId())) {
+            if (!existentes.add(chave(TipoRecomendacao.REPOSICAO, med.getId(), pos.getUnidade().getId()))) {
                 continue;
             }
             int qtd = calculadoraRecomendacao.quantidadeReposicao(
@@ -151,7 +166,7 @@ public class GeradorRecomendacao {
             Prioridade prioridade = calculadoraRecomendacao.prioridadePorCriticidade(med.getCriticidade());
             BigDecimal economia = economia(qtd, 3 + (seq[0] % 5));
 
-            recomendacaoRepository.save(new Recomendacao(TipoRecomendacao.REPOSICAO, med,
+            acc.add(new Recomendacao(TipoRecomendacao.REPOSICAO, med,
                     pos.getUnidade(), null, qtd, justificativa, OrigemMotor.REGRAS,
                     prioridade, economia));
             seq[0]++;

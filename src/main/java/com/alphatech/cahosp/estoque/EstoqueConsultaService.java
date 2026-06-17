@@ -84,15 +84,15 @@ public class EstoqueConsultaService {
         return new PosicaoEstoqueDetalheResponse(paraResponse(posicao), lotes, movimentacoes);
     }
 
-    /** KPIs do painel de estoque (RF-EST-01/04/05). */
-    public ResumoEstoqueResponse resumo() {
-        List<PosicaoEstoque> posicoes = posicaoRepository.findAll();
+    /** KPIs do painel de estoque, com filtros opcionais de unidade/medicamento (RF-EST-01/04/05). */
+    public ResumoEstoqueResponse resumo(UUID unidadeId, UUID medicamentoId) {
+        List<PosicaoEstoque> posicoes = posicaoRepository.buscarFiltrado(unidadeId, medicamentoId);
         long itensCriticos = posicoes.stream().filter(this::critico).count();
         long totalUnidades = posicoes.stream().mapToLong(PosicaoEstoque::getQuantidade).sum();
         long leadMedio = posicoes.isEmpty() ? 0 : Math.round(posicoes.stream()
                 .mapToInt(PosicaoEstoque::getTempoMedioRessuprimentoDias).average().orElse(0));
-        long lotesProximos = loteRepository.countByQuantidadeGreaterThanAndValidadeLessThanEqual(
-                0, LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO));
+        long lotesProximos = loteRepository.contarProximosVencimento(
+                LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO), unidadeId, medicamentoId);
         return new ResumoEstoqueResponse(itensCriticos, lotesProximos, leadMedio, totalUnidades);
     }
 

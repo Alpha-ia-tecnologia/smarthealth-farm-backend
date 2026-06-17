@@ -64,9 +64,11 @@ public class AlertaController {
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do painel de alertas (abertos, desabastecimento, vencimento, tratados)")
-    public ResponseEntity<ApiResponse<ResumoAlertasResponse>> resumo() {
-        return ResponseEntity.ok(ApiResponse.ok(alertaService.resumo()));
+    @Operation(summary = "KPIs do painel de alertas (abertos, desabastecimento, vencimento, tratados); filtros por unidade/medicamento")
+    public ResponseEntity<ApiResponse<ResumoAlertasResponse>> resumo(
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID medicamentoId) {
+        return ResponseEntity.ok(ApiResponse.ok(alertaService.resumo(unidadeId, medicamentoId)));
     }
 
     @GetMapping("/limiares")

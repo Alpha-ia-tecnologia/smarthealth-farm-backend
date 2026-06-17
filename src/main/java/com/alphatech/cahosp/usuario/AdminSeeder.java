@@ -10,9 +10,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 /**
- * Cria o administrador inicial (perfil TI) no startup, SE ainda nao existir — idempotente
- * em redeploys. Credenciais vem de env ({@code ADMIN_NOME}/{@code ADMIN_EMAIL}/{@code ADMIN_SENHA}).
- * Sem senha definida, nao cria nada (evita admin com senha fraca). RF-ADM / RF-SEG.
+ * Cria o administrador inicial (perfil {@code ADMIN}, superusuario) no startup, SE ainda nao
+ * existir — idempotente em redeploys. Se o usuario do e-mail configurado ja existe com outro
+ * perfil, e <strong>promovido para ADMIN</strong> (garante que a conta administradora tenha acesso
+ * total apos a introducao do perfil). Credenciais vem de env
+ * ({@code ADMIN_NOME}/{@code ADMIN_EMAIL}/{@code ADMIN_SENHA}). Sem senha definida, nao cria nada
+ * (evita admin com senha fraca). RF-ADM / RF-SEG.
  */
 @Component
 public class AdminSeeder implements CommandLineRunner {
@@ -43,12 +46,20 @@ public class AdminSeeder implements CommandLineRunner {
             log.warn("ADMIN_SENHA nao definida — administrador inicial NAO foi criado.");
             return;
         }
-        if (usuarioRepository.existsByEmailIgnoreCase(email)) {
-            log.info("Administrador inicial ja existe ({}). Nada a fazer.", email);
+        var existente = usuarioRepository.findByEmailIgnoreCase(email);
+        if (existente.isPresent()) {
+            Usuario admin = existente.get();
+            if (admin.getPerfil() != Perfil.ADMIN) {
+                admin.setPerfil(Perfil.ADMIN);
+                usuarioRepository.save(admin);
+                log.info("Administrador inicial ({}) promovido para perfil ADMIN.", email);
+            } else {
+                log.info("Administrador inicial ja existe ({}) com perfil ADMIN. Nada a fazer.", email);
+            }
             return;
         }
-        Usuario admin = new Usuario(nome, email, passwordEncoder.encode(senha), Perfil.TI);
+        Usuario admin = new Usuario(nome, email, passwordEncoder.encode(senha), Perfil.ADMIN);
         usuarioRepository.save(admin);
-        log.info("Administrador inicial criado: {} (perfil TI).", email);
+        log.info("Administrador inicial criado: {} (perfil ADMIN).", email);
     }
 }

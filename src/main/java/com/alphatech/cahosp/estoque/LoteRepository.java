@@ -3,6 +3,8 @@ package com.alphatech.cahosp.estoque;
 import com.alphatech.cahosp.estoque.dominio.Lote;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -22,9 +24,31 @@ public interface LoteRepository extends JpaRepository<Lote, UUID>, JpaSpecificat
     long countByQuantidadeGreaterThanAndValidadeLessThanEqual(int quantidade, LocalDate validadeAte);
 
     /**
-     * Lotes com saldo acima de {@code quantidade} e validade ate a data, ordenados pela validade.
-     * Usado pelo motor de alertas de vencimento (RF-ALE-02).
+     * Conta lotes com saldo proximos do vencimento (ate {@code validadeAte}), com filtro opcional
+     * de unidade/medicamento — KPI do painel filtrado. RF-DASH-01/02.
      */
-    List<Lote> findByQuantidadeGreaterThanAndValidadeLessThanEqualOrderByValidadeAsc(
-            int quantidade, LocalDate validadeAte);
+    @Query("""
+            SELECT COUNT(l) FROM Lote l
+            WHERE l.quantidade > 0 AND l.validade <= :validadeAte
+              AND (:unidadeId IS NULL OR l.unidade.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR l.medicamento.id = :medicamentoId)
+            """)
+    long contarProximosVencimento(@Param("validadeAte") LocalDate validadeAte,
+                                  @Param("unidadeId") UUID unidadeId,
+                                  @Param("medicamentoId") UUID medicamentoId);
+
+    /**
+     * Lotes com saldo acima de {@code quantidade} e validade ate a data, ordenados pela validade,
+     * com medicamento e unidade ja carregados (fetch join). Usado pelo motor de alertas de
+     * vencimento (RF-ALE-02) — evita N+1 nas relacoes lazy ao varrer os lotes.
+     */
+    @Query("""
+            SELECT l FROM Lote l
+              JOIN FETCH l.medicamento
+              JOIN FETCH l.unidade
+            WHERE l.quantidade > :quantidade AND l.validade <= :validadeAte
+            ORDER BY l.validade ASC
+            """)
+    List<Lote> findVencendoComRelacionamentos(@Param("quantidade") int quantidade,
+                                              @Param("validadeAte") LocalDate validadeAte);
 }

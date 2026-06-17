@@ -237,6 +237,16 @@ class AlertaIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Resumo com ?unidadeId inexistente zera os KPIs (filtro aplicado)")
+    void resumoFiltrado() throws Exception {
+        mvc.perform(get("/alertas/resumo").param("unidadeId", java.util.UUID.randomUUID().toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.ativos").value(0))
+                .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    @Test
     @DisplayName("KPIs são coerentes e somáveis: ativos = abertos+emTratamento = desab.+venc.; +resolvidos = total")
     void resumoCoerente() throws Exception {
         MvcResult res = mvc.perform(get("/alertas/resumo").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))

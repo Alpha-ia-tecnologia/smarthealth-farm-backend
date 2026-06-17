@@ -12,15 +12,19 @@ import java.util.Arrays;
  *   <li>{@code OPERADOR} — operacao do dia a dia (leitura e lancamentos operacionais).</li>
  *   <li>{@code GESTOR} — decisoes de negocio (aprovar recomendacao, recalibrar previsao, limiares).</li>
  *   <li>{@code TI} — administracao do sistema (usuarios, parametros, integracoes).</li>
+ *   <li>{@code ADMIN} — superusuario: acumula todos os poderes (Gestor + TI). Via hierarquia de
+ *       papeis no Spring Security ({@code ROLE_ADMIN > ROLE_GESTOR}, {@code > ROLE_TI}), qualquer
+ *       {@code @PreAuthorize} de Gestor/TI ja aceita um Admin, sem checagem caso a caso.</li>
  * </ul>
  *
- * <p>Os rotulos do front sao "Operador"/"Gestor"/"TI"; aqui o nome da constante e o valor
+ * <p>Os rotulos do front sao "Operador"/"Gestor"/"TI"/"Admin"; aqui o nome da constante e o valor
  * persistido em maiusculo. A autoridade do Spring Security e {@code ROLE_<constante>}.
  */
 public enum Perfil {
     OPERADOR("Operador"),
     GESTOR("Gestor"),
-    TI("TI");
+    TI("TI"),
+    ADMIN("Admin");
 
     private final String rotulo;
 
@@ -56,6 +60,6 @@ public enum Perfil {
                 .filter(p -> p.name().equalsIgnoreCase(alvo) || p.rotulo.equalsIgnoreCase(alvo))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Perfil invalido: '" + valor + "'. Use Operador, Gestor ou TI."));
+                        "Perfil invalido: '" + valor + "'. Use Operador, Gestor, TI ou Admin."));
     }
 }

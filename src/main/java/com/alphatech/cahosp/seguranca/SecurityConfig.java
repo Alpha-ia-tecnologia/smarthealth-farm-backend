@@ -3,6 +3,10 @@ package com.alphatech.cahosp.seguranca;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.access.expression.method.DefaultMethodSecurityExpressionHandler;
+import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -74,6 +78,32 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    /**
+     * Hierarquia de papeis (RBAC). O {@code ADMIN} e superusuario: herda Gestor e TI; ambos herdam
+     * Operador. Assim qualquer {@code @PreAuthorize("hasRole('GESTOR')")}/{@code 'TI'} ja aceita um
+     * Admin sem checagem caso a caso. RF-ADM / RF-SEG.
+     */
+    static RoleHierarchy construirHierarquiaPapeis() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("ADMIN").implies("GESTOR", "TI")
+                .role("GESTOR").implies("OPERADOR")
+                .role("TI").implies("OPERADOR")
+                .build();
+    }
+
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return construirHierarquiaPapeis();
+    }
+
+    /** Faz o {@code @PreAuthorize} respeitar a hierarquia de papeis acima (method security). */
+    @Bean
+    public MethodSecurityExpressionHandler methodSecurityExpressionHandler(RoleHierarchy roleHierarchy) {
+        DefaultMethodSecurityExpressionHandler handler = new DefaultMethodSecurityExpressionHandler();
+        handler.setRoleHierarchy(roleHierarchy);
+        return handler;
     }
 
     @Bean

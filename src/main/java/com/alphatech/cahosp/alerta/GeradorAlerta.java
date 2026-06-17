@@ -17,8 +17,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 /**
  * Motor de geracao de alertas por regra (RF-ALE-01/02). Deriva alertas do estado atual do estoque,
@@ -66,16 +70,22 @@ public class GeradorAlerta {
         this.calculadoraAlerta = calculadoraAlerta;
     }
 
-    /** Regenera os alertas tomando {@code referencia} como "hoje" para os calculos de prazo. */
+    /**
+     * Regenera os alertas tomando {@code referencia} como "hoje" para os calculos de prazo.
+     * Sem N+1: as posicoes/lotes vem com relacionamentos em fetch join, a deduplicacao usa as
+     * chaves carregadas de uma vez (Set em memoria) e a persistencia e em lote ({@code saveAll}).
+     */
     @Transactional
     public GeracaoAlertasResponse gerar(LocalDate referencia) {
         LimiarAlerta limiares = limiarService.configuracao();
         long abertosRenovados = alertaRepository.deleteByStatus(StatusAlerta.ABERTO);
 
+        List<Alerta> novos = new ArrayList<>();
         long desabastecimento = limiares.isDesabastecimentoAtivo()
-                ? gerarDesabastecimento(limiares) : 0;
+                ? gerarDesabastecimento(limiares, novos) : 0;
         long vencimento = limiares.isVencimentoAtivo()
-                ? gerarVencimento(referencia, limiares) : 0;
+                ? gerarVencimento(referencia, limiares, novos) : 0;
+        alertaRepository.saveAll(novos);
 
         long totalAtivo = alertaRepository.count();
         String mensagem = String.format(
@@ -86,17 +96,22 @@ public class GeradorAlerta {
     }
 
     /** RF-ALE-01: medicamento essencial com saldo abaixo do limiar vira alerta de desabastecimento. */
-    private long gerarDesabastecimento(LimiarAlerta limiares) {
+    private long gerarDesabastecimento(LimiarAlerta limiares, List<Alerta> acc) {
+        // Chave natural {medicamento, unidade} ja existente — dedup em memoria (1 query, sem N+1).
+        Set<String> chaves = new HashSet<>();
+        for (Object[] chave : alertaRepository.chavesPorMedicamentoEUnidade(TipoAlerta.DESABASTECIMENTO)) {
+            chaves.add(chave[0] + ":" + chave[1]);
+        }
         long gerados = 0;
-        for (PosicaoEstoque pos : posicaoRepository.findAll()) {
+        for (PosicaoEstoque pos : posicaoRepository.findAllComRelacionamentos()) {
             Medicamento med = pos.getMedicamento();
             boolean abaixoDoMinimo = calculadoraAlerta.abaixoDoEstoqueMinimo(
                     pos.getQuantidade(), pos.getNivelCritico(), limiares.getPercentualEstoqueMinimo());
             if (!abaixoDoMinimo || !med.isEssencial()) {
                 continue;
             }
-            if (alertaRepository.existsByTipoAndMedicamentoIdAndUnidadeIdAndLoteIsNull(
-                    TipoAlerta.DESABASTECIMENTO, med.getId(), pos.getUnidade().getId())) {
+            // add() devolve false se a chave ja existe (no banco ou nesta mesma rodada) — evita duplicar.
+            if (!chaves.add(med.getId() + ":" + pos.getUnidade().getId())) {
                 continue;
             }
             long dias = calculadoraAlerta.coberturaDias(pos.getQuantidade(), pos.getConsumoMedioDiario());
@@ -104,7 +119,7 @@ public class GeradorAlerta {
             String mensagem = String.format(
                     "Cobertura de %d dia(s) — abaixo do estoque mínimo (%d %s).",
                     dias, pos.getNivelCritico(), med.getUnidadeMedida());
-            alertaRepository.save(new Alerta(TipoAlerta.DESABASTECIMENTO, severidade, med,
+            acc.add(new Alerta(TipoAlerta.DESABASTECIMENTO, severidade, med,
                     pos.getUnidade(), null, mensagem, DESTINATARIOS_DESABASTECIMENTO, (int) dias));
             gerados++;
         }
@@ -112,13 +127,12 @@ public class GeradorAlerta {
     }
 
     /** RF-ALE-02: lote com saldo e validade na janela configurada vira alerta de vencimento. */
-    private long gerarVencimento(LocalDate referencia, LimiarAlerta limiares) {
+    private long gerarVencimento(LocalDate referencia, LimiarAlerta limiares, List<Alerta> acc) {
+        Set<UUID> lotesComAlerta = new HashSet<>(alertaRepository.lotesComAlerta(TipoAlerta.VENCIMENTO));
         LocalDate validadeAte = referencia.plusDays(limiares.getAntecedenciaVencimentoDias());
-        List<Lote> lotes = loteRepository
-                .findByQuantidadeGreaterThanAndValidadeLessThanEqualOrderByValidadeAsc(0, validadeAte);
         long gerados = 0;
-        for (Lote lote : lotes) {
-            if (alertaRepository.existsByTipoAndLoteId(TipoAlerta.VENCIMENTO, lote.getId())) {
+        for (Lote lote : loteRepository.findVencendoComRelacionamentos(0, validadeAte)) {
+            if (!lotesComAlerta.add(lote.getId())) {
                 continue;
             }
             long dias = calculadoraEstoque.diasParaVencer(lote.getValidade(), referencia);
@@ -127,7 +141,7 @@ public class GeradorAlerta {
             String mensagem = String.format(
                     "Lote %s (%d %s) vence em %d dia(s).",
                     lote.getNumeroLote(), lote.getQuantidade(), med.getUnidadeMedida(), dias);
-            alertaRepository.save(new Alerta(TipoAlerta.VENCIMENTO, severidade, med,
+            acc.add(new Alerta(TipoAlerta.VENCIMENTO, severidade, med,
                     lote.getUnidade(), lote, mensagem, DESTINATARIOS_VENCIMENTO, (int) dias));
             gerados++;
         }

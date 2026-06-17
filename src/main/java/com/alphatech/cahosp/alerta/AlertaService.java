@@ -50,18 +50,18 @@ public class AlertaService {
                 .map(AlertaResponse::de);
     }
 
-    /** KPIs do painel de alertas (RF-ALE-04/05). */
-    public ResumoAlertasResponse resumo() {
-        long abertos = alertaRepository.countByStatus(StatusAlerta.ABERTO);
-        long desabastecimento = alertaRepository.countByTipoAndStatusNot(
-                TipoAlerta.DESABASTECIMENTO, StatusAlerta.RESOLVIDO);
-        long vencimento = alertaRepository.countByTipoAndStatusNot(
-                TipoAlerta.VENCIMENTO, StatusAlerta.RESOLVIDO);
-        long criticos = alertaRepository.countBySeveridadeAndStatusNot(
-                Severidade.CRITICO, StatusAlerta.RESOLVIDO);
-        long emTratamento = alertaRepository.countByStatus(StatusAlerta.EM_TRATAMENTO);
-        long resolvidos = alertaRepository.countByStatus(StatusAlerta.RESOLVIDO);
-        long total = alertaRepository.count();
+    /** KPIs do painel de alertas, com filtros opcionais de unidade/medicamento (RF-ALE-04/05). */
+    public ResumoAlertasResponse resumo(UUID unidadeId, UUID medicamentoId) {
+        long abertos = alertaRepository.contarPainel(null, null, StatusAlerta.ABERTO, null, unidadeId, medicamentoId);
+        long desabastecimento = alertaRepository.contarPainel(
+                TipoAlerta.DESABASTECIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+        long vencimento = alertaRepository.contarPainel(
+                TipoAlerta.VENCIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+        long criticos = alertaRepository.contarPainel(
+                null, Severidade.CRITICO, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+        long emTratamento = alertaRepository.contarPainel(null, null, StatusAlerta.EM_TRATAMENTO, null, unidadeId, medicamentoId);
+        long resolvidos = alertaRepository.contarPainel(null, null, StatusAlerta.RESOLVIDO, null, unidadeId, medicamentoId);
+        long total = alertaRepository.contarPainel(null, null, null, null, unidadeId, medicamentoId);
         // "Ativos" = não resolvidos: é o card principal e fecha com os cards por tipo
         // (desabastecimento + vencimento == ativos) e com o todo (ativos + resolvidos == total).
         long ativos = abertos + emTratamento;

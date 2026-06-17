@@ -51,9 +51,11 @@ public class PrevisaoController {
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do painel de previsao (MAPE medio, criticos na meta, drift)")
-    public ResponseEntity<ApiResponse<PainelPrevisaoResponse>> resumo() {
-        return ResponseEntity.ok(ApiResponse.ok(previsaoService.resumo()));
+    @Operation(summary = "KPIs do painel de previsao (MAPE medio, criticos na meta, drift); filtros por unidade/medicamento")
+    public ResponseEntity<ApiResponse<PainelPrevisaoResponse>> resumo(
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID medicamentoId) {
+        return ResponseEntity.ok(ApiResponse.ok(previsaoService.resumo(unidadeId, medicamentoId)));
     }
 
     @GetMapping("/{medicamentoId}/{unidadeId}")

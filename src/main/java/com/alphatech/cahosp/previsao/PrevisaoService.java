@@ -63,9 +63,9 @@ public class PrevisaoService {
         return new PrevisaoDetalheResponse(PrevisaoResumoResponse.de(previsao), serie);
     }
 
-    /** KPIs do painel de previsao. RF-PRV-04/05/06. */
-    public PainelPrevisaoResponse resumo() {
-        List<Previsao> previsoes = previsaoRepository.findTodasComMedicamento();
+    /** KPIs do painel de previsao, com filtros opcionais de unidade/medicamento. RF-PRV-04/05/06. */
+    public PainelPrevisaoResponse resumo(UUID unidadeId, UUID medicamentoId) {
+        List<Previsao> previsoes = previsaoRepository.findFiltradasComMedicamento(unidadeId, medicamentoId);
         long ativas = previsoes.size();
         long totalCriticos = previsoes.stream().filter(this::ehCritico).count();
         long criticosNaMeta = previsoes.stream()

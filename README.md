@@ -145,7 +145,7 @@ Pré-requisitos: **JDK 21**, **PostgreSQL** e (para os testes de integração) *
 cp .env.example .env        # preencha DB_*, JWT_SECRET, etc.
 
 # 2) rodar em desenvolvimento
-./mvnw spring-boot:run      # Windows: .\mvnw.cmd spring-boot:run
+c      # Windows: .\mvnw.cmd spring-boot:run
 
 # 3) build de produção
 ./mvnw clean package        # → target/*.jar

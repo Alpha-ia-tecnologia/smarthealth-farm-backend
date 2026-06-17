@@ -80,11 +80,16 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
 
     long countByStatus(StatusRecomendacao status);
 
-    long countByStatusNot(StatusRecomendacao status);
-
     long countByOrigemMotor(OrigemMotor origemMotor);
 
-    @Query("SELECT COALESCE(SUM(r.economiaEstimada), 0) FROM Recomendacao r")
+    /**
+     * Soma a economia estimada das recomendações que ainda contam como potencial — exclui as
+     * RECUSADAS (descartadas não geram economia). RF-REC-02.
+     */
+    @Query("""
+            SELECT COALESCE(SUM(r.economiaEstimada), 0) FROM Recomendacao r
+            WHERE r.status <> com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao.RECUSADA
+            """)
     BigDecimal somarEconomiaEstimada();
 
     /**
@@ -116,11 +121,58 @@ public interface RecomendacaoRepository extends JpaRepository<Recomendacao, UUID
             """)
     List<Recomendacao> findAbertas(@Param("status") StatusRecomendacao status, Pageable pageable);
 
+    // ----- Painel filtrado por unidade/medicamento (RF-DASH-01/02) -----
+
+    /**
+     * Conta recomendacoes para o painel com filtros opcionais (status, unidade — destino OU
+     * origem —, medicamento). Com todos nulos, equivale a contagem da rede inteira.
+     */
+    @Query("""
+            SELECT COUNT(r) FROM Recomendacao r
+            WHERE (:status IS NULL OR r.status = :status)
+              AND (:origemMotor IS NULL OR r.origemMotor = :origemMotor)
+              AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+            """)
+    long contarPainel(@Param("status") StatusRecomendacao status,
+                      @Param("origemMotor") OrigemMotor origemMotor,
+                      @Param("unidadeId") UUID unidadeId,
+                      @Param("medicamentoId") UUID medicamentoId);
+
+    /** Variante de {@link #somarEconomiaEstimada} com filtro opcional de unidade/medicamento. */
+    @Query("""
+            SELECT COALESCE(SUM(r.economiaEstimada), 0) FROM Recomendacao r
+            WHERE r.status <> com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao.RECUSADA
+              AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+            """)
+    BigDecimal somarEconomiaEstimadaFiltrada(@Param("unidadeId") UUID unidadeId,
+                                             @Param("medicamentoId") UUID medicamentoId);
+
+    /** Variante de {@link #findPendentesPorImpacto} com filtro opcional de unidade/medicamento. */
+    @Query("""
+            SELECT r FROM Recomendacao r
+              JOIN FETCH r.medicamento
+              JOIN FETCH r.unidadeDestino
+              LEFT JOIN FETCH r.unidadeOrigem
+            WHERE r.status = :status
+              AND (:unidadeId IS NULL OR r.unidadeDestino.id = :unidadeId OR r.unidadeOrigem.id = :unidadeId)
+              AND (:medicamentoId IS NULL OR r.medicamento.id = :medicamentoId)
+            ORDER BY r.economiaEstimada DESC
+            """)
+    List<Recomendacao> findPendentesPorImpactoFiltrado(@Param("status") StatusRecomendacao status,
+                                                       @Param("unidadeId") UUID unidadeId,
+                                                       @Param("medicamentoId") UUID medicamentoId,
+                                                       Pageable pageable);
+
     // ----- Suporte ao motor de geracao -----
 
-    /** Ja existe recomendacao deste tipo para o medicamento/unidade destino (qualquer status)? */
-    boolean existsByTipoAndMedicamentoIdAndUnidadeDestinoId(
-            TipoRecomendacao tipo, UUID medicamentoId, UUID unidadeDestinoId);
+    /**
+     * Chaves [tipo, medicamentoId, unidadeDestinoId] das recomendacoes existentes — carregadas de
+     * uma vez para o motor deduplicar em memoria, em vez de um {@code exists} por candidato (N+1).
+     */
+    @Query("SELECT r.tipo, r.medicamento.id, r.unidadeDestino.id FROM Recomendacao r")
+    List<Object[]> chavesExistentes();
 
     /**
      * Remove as recomendacoes pendentes (renova as nao tratadas na regeneracao). Delete derivado

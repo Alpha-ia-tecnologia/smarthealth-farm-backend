@@ -136,6 +136,35 @@ public class Recomendacao {
         this.status = StatusRecomendacao.EXECUTADA;
     }
 
+    /** Recusa (descarta) a recomendacao (RF-REC-05 — acao de Gestor). Apenas a partir de {@code PENDENTE}. */
+    public void recusar() {
+        if (status != StatusRecomendacao.PENDENTE) {
+            throw new RegraNegocioException(
+                    "Apenas recomendacoes pendentes podem ser recusadas (status atual: "
+                            + status.rotulo() + ").");
+        }
+        this.status = StatusRecomendacao.RECUSADA;
+    }
+
+    /**
+     * Edita uma recomendacao ainda {@code PENDENTE} (ajuste manual de uma sugestao): medicamento,
+     * unidades, quantidade e economia recalculada. O {@link #tipo} nao muda; quem chama valida a
+     * coerencia origem/destino conforme o tipo.
+     */
+    public void editar(Medicamento medicamento, Unidade unidadeDestino, Unidade unidadeOrigem,
+                       int quantidade, BigDecimal economiaEstimada) {
+        if (status != StatusRecomendacao.PENDENTE) {
+            throw new RegraNegocioException(
+                    "Apenas recomendacoes pendentes podem ser editadas (status atual: "
+                            + status.rotulo() + ").");
+        }
+        this.medicamento = medicamento;
+        this.unidadeDestino = unidadeDestino;
+        this.unidadeOrigem = unidadeOrigem;
+        this.quantidade = quantidade;
+        this.economiaEstimada = economiaEstimada;
+    }
+
     public UUID getId() {
         return id;
     }

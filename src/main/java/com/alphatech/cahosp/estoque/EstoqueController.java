@@ -48,9 +48,11 @@ public class EstoqueController {
     }
 
     @GetMapping("/resumo")
-    @Operation(summary = "KPIs do estoque (itens criticos, lotes a vencer, lead medio, total)")
-    public ResponseEntity<ApiResponse<ResumoEstoqueResponse>> resumo() {
-        return ResponseEntity.ok(ApiResponse.ok(consultaService.resumo()));
+    @Operation(summary = "KPIs do estoque (itens criticos, lotes a vencer, lead medio, total); filtros por unidade/medicamento")
+    public ResponseEntity<ApiResponse<ResumoEstoqueResponse>> resumo(
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID medicamentoId) {
+        return ResponseEntity.ok(ApiResponse.ok(consultaService.resumo(unidadeId, medicamentoId)));
     }
 
     @GetMapping("/{medicamentoId}/{unidadeId}")

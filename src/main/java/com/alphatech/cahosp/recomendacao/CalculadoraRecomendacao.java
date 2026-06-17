@@ -4,6 +4,9 @@ import com.alphatech.cahosp.medicamento.dominio.Criticidade;
 import com.alphatech.cahosp.recomendacao.dominio.Prioridade;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 /**
  * Regras puras de dimensionamento de recomendacoes (RF-REC) — sem dependencia de banco, faceis
  * de testar. Espelha o algoritmo do front (src/data/index.ts):
@@ -28,6 +31,12 @@ public class CalculadoraRecomendacao {
     private static final double ALVO_REDISTRIBUICAO = 1.5;
     /** Fator de folga para considerar uma posicao "excedente" (apta a doar). */
     private static final double FATOR_EXCEDENTE = 2.0;
+    /**
+     * Economia estimada (R$) por unidade transferida numa transferencia <strong>manual</strong>.
+     * Valor fixo e filtrativo (MVP — nao ha metrica real de custo ainda); o front espelha esta
+     * constante para mostrar a previa que muda com a quantidade. Ver {@code src/lib/recomendacoes.ts}.
+     */
+    public static final int FATOR_ECONOMIA_MANUAL = 12;
 
     /** Unidades a repor para restaurar o estoque maximo (RF-REC-01). */
     public int quantidadeReposicao(int estoqueMaximo, int quantidade) {
@@ -51,5 +60,10 @@ public class CalculadoraRecomendacao {
     /** Prioridade da reposicao pela criticidade do medicamento (RF-REC). */
     public Prioridade prioridadePorCriticidade(Criticidade criticidade) {
         return criticidade == Criticidade.ALTA ? Prioridade.ESSENCIAL : Prioridade.IMPORTANTE;
+    }
+
+    /** Economia estimada (R$) de uma transferencia manual: quantidade x {@value #FATOR_ECONOMIA_MANUAL}. */
+    public BigDecimal economiaManual(int quantidade) {
+        return BigDecimal.valueOf((long) quantidade * FATOR_ECONOMIA_MANUAL).setScale(2, RoundingMode.HALF_UP);
     }
 }

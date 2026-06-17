@@ -136,6 +136,16 @@ class EstoqueIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Resumo com ?unidadeId inexistente zera os KPIs (filtro aplicado)")
+    void resumoFiltrado() throws Exception {
+        mvc.perform(get("/estoque/resumo").param("unidadeId", UUID.randomUUID().toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.itensCriticos").value(0))
+                .andExpect(jsonPath("$.data.totalUnidadesEstoque").value(0));
+    }
+
+    @Test
     @DisplayName("Drill-down traz posicao, lotes e movimentacoes")
     void detalhar() throws Exception {
         mvc.perform(get("/estoque/" + medId + "/" + uniId).header(HttpHeaders.AUTHORIZATION, bearer()))

@@ -42,15 +42,16 @@ public class MedicamentoController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista medicamentos com filtros opcionais (familia, criticidade, essencial, ativo, busca)")
+    @Operation(summary = "Lista medicamentos com filtros opcionais (familia, criticidade, essencial, ativo, busca, unidade)")
     public ResponseEntity<ApiResponse<List<MedicamentoResponse>>> listar(
             @RequestParam(required = false) FamiliaTerapeutica familia,
             @RequestParam(required = false) Criticidade criticidade,
             @RequestParam(required = false) Boolean essencial,
             @RequestParam(required = false) Boolean ativo,
-            @RequestParam(required = false) String busca) {
+            @RequestParam(required = false) String busca,
+            @RequestParam(required = false) UUID unidadeId) {
         return ResponseEntity.ok(ApiResponse.lista(
-                medicamentoService.listar(familia, criticidade, essencial, ativo, busca)));
+                medicamentoService.listar(familia, criticidade, essencial, ativo, busca, unidadeId)));
     }
 
     @GetMapping("/{id}")

@@ -31,17 +31,25 @@ public class MedicamentoService {
         this.medicamentoRepository = medicamentoRepository;
     }
 
-    /** Lista medicamentos com filtros opcionais. Ordenacao por codigo ASC. RF-DAD-06. */
+    /**
+     * Lista medicamentos com filtros opcionais. Ordenacao por codigo ASC. RF-DAD-06.
+     *
+     * <p>Quando {@code unidadeId} e informado, restringe aos medicamentos com posicao de
+     * estoque naquela unidade (filtro dependente de medicamento no front).
+     */
     @Transactional(readOnly = true)
     public List<MedicamentoResponse> listar(FamiliaTerapeutica familia,
                                             Criticidade criticidade,
                                             Boolean essencial,
                                             Boolean ativo,
-                                            String busca) {
+                                            String busca,
+                                            UUID unidadeId) {
         String termo = (busca == null || busca.isBlank()) ? null : busca.trim();
-        return medicamentoRepository.buscarComFiltros(familia, criticidade, essencial, ativo, termo,
-                        Sort.by("codigo").ascending())
-                .stream()
+        Sort ordem = Sort.by("codigo").ascending();
+        List<Medicamento> encontrados = unidadeId == null
+                ? medicamentoRepository.buscarComFiltros(familia, criticidade, essencial, ativo, termo, ordem)
+                : medicamentoRepository.buscarPorUnidadeComFiltros(unidadeId, familia, criticidade, essencial, ativo, termo, ordem);
+        return encontrados.stream()
                 .map(MedicamentoResponse::de)
                 .toList();
     }

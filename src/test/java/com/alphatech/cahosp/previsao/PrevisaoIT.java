@@ -126,6 +126,16 @@ class PrevisaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Resumo com ?unidadeId inexistente zera os KPIs (filtro aplicado)")
+    void resumoFiltrado() throws Exception {
+        mvc.perform(get("/previsoes/resumo").param("unidadeId", UUID.randomUUID().toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.previsoesAtivas").value(0))
+                .andExpect(jsonPath("$.data.totalCriticos").value(0));
+    }
+
+    @Test
     @DisplayName("Drill-down traz a serie com 15 pontos (12 historico + 3 previsao)")
     void detalhar() throws Exception {
         mvc.perform(get("/previsoes/" + medId + "/" + uniId).header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))

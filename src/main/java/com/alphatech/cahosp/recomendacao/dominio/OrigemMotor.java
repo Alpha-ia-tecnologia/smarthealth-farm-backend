@@ -6,13 +6,14 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 /**
- * Origem do motor que gerou a recomendacao (RF-REC-03): {@code REGRAS} (heuristica deterministica)
- * ou {@code APRENDIZADO_MAQUINA} (assistida por IA). Espelha {@code origemMotor} do front e
- * sustenta a evolucao "regras -> IA" exibida no painel de desempenho.
+ * Origem da recomendacao (RF-REC-03): {@code REGRAS} (heuristica deterministica),
+ * {@code APRENDIZADO_MAQUINA} (assistida por IA) ou {@code MANUAL} (criada/editada por um usuario).
+ * Espelha {@code origemMotor} do front e sustenta a evolucao "regras -> IA" exibida no painel.
  */
 public enum OrigemMotor {
     REGRAS("Regras"),
-    APRENDIZADO_MAQUINA("Aprendizado de Máquina");
+    APRENDIZADO_MAQUINA("Aprendizado de Máquina"),
+    MANUAL("Manual");
 
     private final String rotulo;
 
@@ -35,6 +36,6 @@ public enum OrigemMotor {
                 .filter(o -> o.name().equalsIgnoreCase(alvo) || o.rotulo.equalsIgnoreCase(alvo))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Origem do motor invalida: '" + valor + "'. Use Regras ou Aprendizado de Máquina."));
+                        "Origem do motor invalida: '" + valor + "'. Use Regras, Aprendizado de Máquina ou Manual."));
     }
 }

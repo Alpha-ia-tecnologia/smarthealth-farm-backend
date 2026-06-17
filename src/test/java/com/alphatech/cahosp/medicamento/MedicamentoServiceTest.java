@@ -15,12 +15,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -111,6 +113,33 @@ class MedicamentoServiceTest {
         service.alterarStatus(id, false);
 
         verify(alvoMock).desativar();
+    }
+
+    @Test
+    @DisplayName("listar sem unidadeId usa a consulta padrao (buscarComFiltros)")
+    void listarSemUnidade() {
+        when(medicamentoRepository.buscarComFiltros(any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of());
+
+        service.listar(null, null, null, null, null, null);
+
+        verify(medicamentoRepository).buscarComFiltros(any(), any(), any(), any(), any(), any());
+        verify(medicamentoRepository, never())
+                .buscarPorUnidadeComFiltros(any(), any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("listar com unidadeId usa a consulta por unidade (buscarPorUnidadeComFiltros)")
+    void listarComUnidade() {
+        UUID unidadeId = UUID.randomUUID();
+        when(medicamentoRepository.buscarPorUnidadeComFiltros(eq(unidadeId), any(), any(), any(), any(), any(), any()))
+                .thenReturn(List.of());
+
+        service.listar(null, null, null, null, null, unidadeId);
+
+        verify(medicamentoRepository)
+                .buscarPorUnidadeComFiltros(eq(unidadeId), any(), any(), any(), any(), any(), any());
+        verify(medicamentoRepository, never()).buscarComFiltros(any(), any(), any(), any(), any(), any());
     }
 
     @Test

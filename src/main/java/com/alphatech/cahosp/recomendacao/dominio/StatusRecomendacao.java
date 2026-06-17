@@ -9,13 +9,15 @@ import java.util.Arrays;
  * Ciclo de vida de uma recomendacao (RF-REC-05). Espelha o campo {@code status} do front
  * ({@code Pendente} / {@code Aprovada} / {@code Executada}).
  *
- * <p>Fluxo: {@code PENDENTE -> APROVADA -> EXECUTADA}. Aprovar e executar sao acoes de Gestor;
- * a regeneracao do motor renova apenas as pendentes (preserva aprovadas/executadas).
+ * <p>Fluxo: {@code PENDENTE -> APROVADA -> EXECUTADA}, ou {@code PENDENTE -> RECUSADA} (descarte).
+ * Aprovar, executar e recusar sao acoes de Gestor; a regeneracao do motor renova apenas as
+ * pendentes (preserva aprovadas/executadas/recusadas).
  */
 public enum StatusRecomendacao {
     PENDENTE("Pendente"),
     APROVADA("Aprovada"),
-    EXECUTADA("Executada");
+    EXECUTADA("Executada"),
+    RECUSADA("Recusada");
 
     private final String rotulo;
 
@@ -38,6 +40,6 @@ public enum StatusRecomendacao {
                 .filter(s -> s.name().equalsIgnoreCase(alvo) || s.rotulo.equalsIgnoreCase(alvo))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException(
-                        "Status invalido: '" + valor + "'. Use Pendente, Aprovada ou Executada."));
+                        "Status invalido: '" + valor + "'. Use Pendente, Aprovada, Executada ou Recusada."));
     }
 }

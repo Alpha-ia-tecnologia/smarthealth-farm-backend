@@ -77,51 +77,68 @@ public class PainelService {
         this.calculadoraPainel = calculadoraPainel;
     }
 
-    /** Dashboard gerencial consolidado (RF-DASH-01). */
-    public PainelGerencialResponse dashboard() {
-        List<ResumoUnidadeResponse> resumos = resumosUnidades();
+    /**
+     * Dashboard gerencial consolidado (RF-DASH-01). O filtro opcional {@code unidadeId} reaplica
+     * em totais, serie agregada (Demanda x Previsao), alertas recentes e recomendacoes pendentes;
+     * a <strong>cobertura por unidade</strong> permanece a rede inteira (visao cross-unidade).
+     */
+    public PainelGerencialResponse dashboard(UUID unidadeId) {
+        // Cobertura por unidade e sempre a rede toda, independente do filtro.
+        List<ResumoUnidadeResponse> resumos = resumosUnidades(null);
         return new PainelGerencialResponse(
-                montarTotais(),
+                montarTotais(unidadeId, null),
                 resumos.stream()
                         .map(r -> new CoberturaUnidadeResponse(r.sigla(), r.cobertura(), r.statusCobertura()))
                         .toList(),
-                montarSerieAgregada(),
-                alertasRecentes(6),
-                recomendacoesPendentes(4));
+                montarSerieAgregada(unidadeId),
+                alertasRecentes(6, unidadeId, null),
+                recomendacoesPendentes(4, unidadeId, null));
     }
 
-    /** Painel operacional com filas e situacao por unidade (RF-DASH-02). */
-    public PainelOperacionalResponse operacional() {
+    /**
+     * Painel operacional com filas e situacao por unidade (RF-DASH-02). Filtros opcionais de
+     * {@code unidadeId} e {@code medicamentoId} reaplicam nos totais, na fila de alertas e
+     * restringem a situacao por unidade. As recomendacoes em aberto vem desfiltradas (o front
+     * consome /recomendacoes com filtros proprios para esta secao).
+     */
+    public PainelOperacionalResponse operacional(UUID unidadeId, UUID medicamentoId) {
         return new PainelOperacionalResponse(
-                montarTotais(),
-                resumosUnidades(),
-                alertasRecentes(8),
+                montarTotais(unidadeId, medicamentoId),
+                resumosUnidades(unidadeId),
+                alertasRecentes(8, unidadeId, medicamentoId),
                 recomendacoesAbertas(6));
     }
 
-    private TotaisRedeResponse montarTotais() {
-        BigDecimal economia = recomendacaoRepository.somarEconomiaEstimada()
+    private TotaisRedeResponse montarTotais(UUID unidadeId, UUID medicamentoId) {
+        BigDecimal economia = recomendacaoRepository.somarEconomiaEstimadaFiltrada(unidadeId, medicamentoId)
                 .setScale(2, RoundingMode.HALF_UP);
         LocalDate limiteVencimento = LocalDate.now().plusDays(DIAS_PROXIMO_VENCIMENTO);
-        long abertos = alertaRepository.countByStatus(StatusAlerta.ABERTO);
-        long emTratamento = alertaRepository.countByStatus(StatusAlerta.EM_TRATAMENTO);
+        // "ativos" = nao resolvidos (ABERTO + EM_TRATAMENTO); "abertos" = somente ABERTO.
+        long abertos = alertaRepository.contarPainel(null, null, StatusAlerta.ABERTO, null, unidadeId, medicamentoId);
+        long ativos = alertaRepository.contarPainel(null, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId);
+        long medicamentos = (unidadeId == null && medicamentoId == null)
+                ? medicamentoRepository.count()
+                : posicaoRepository.contarMedicamentosDistintos(unidadeId, medicamentoId);
+        long unidades = unidadeId != null ? 1 : unidadeRepository.countByHubFalse();
         return new TotaisRedeResponse(
-                medicamentoRepository.count(),
-                unidadeRepository.countByHubFalse(),
+                medicamentos,
+                unidades,
                 abertos,
-                abertos + emTratamento,
-                alertaRepository.countByTipoAndStatusNot(TipoAlerta.DESABASTECIMENTO, StatusAlerta.RESOLVIDO),
-                alertaRepository.countByTipoAndStatusNot(TipoAlerta.VENCIMENTO, StatusAlerta.RESOLVIDO),
-                recomendacaoRepository.countByStatus(StatusRecomendacao.PENDENTE),
+                ativos,
+                alertaRepository.contarPainel(TipoAlerta.DESABASTECIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId),
+                alertaRepository.contarPainel(TipoAlerta.VENCIMENTO, null, null, StatusAlerta.RESOLVIDO, unidadeId, medicamentoId),
+                recomendacaoRepository.contarPainel(StatusRecomendacao.PENDENTE, null, unidadeId, medicamentoId),
                 economia,
-                posicaoRepository.contarCriticos(),
-                loteRepository.countByQuantidadeGreaterThanAndValidadeLessThanEqual(0, limiteVencimento));
+                posicaoRepository.contarCriticosFiltrado(unidadeId, medicamentoId),
+                loteRepository.contarProximosVencimento(limiteVencimento, unidadeId, medicamentoId));
     }
 
-    private List<ResumoUnidadeResponse> resumosUnidades() {
+    /** Resumos por unidade; {@code unidadeId} opcional restringe a uma unica unidade. */
+    private List<ResumoUnidadeResponse> resumosUnidades(UUID unidadeId) {
         return unidadeRepository
                 .buscarComFiltros(null, null, false, true, null, Sort.by("sigla").ascending())
                 .stream()
+                .filter(u -> unidadeId == null || u.getId().equals(unidadeId))
                 .map(this::resumoUnidade)
                 .toList();
     }
@@ -159,10 +176,10 @@ public class PainelService {
                 calculadoraPainel.statusUnidade(criticos));
     }
 
-    private SerieAgregadaResponse montarSerieAgregada() {
-        Medicamento medicamento = medicamentoMaisCritico();
+    private SerieAgregadaResponse montarSerieAgregada(UUID unidadeId) {
+        Medicamento medicamento = medicamentoMaisCritico(unidadeId);
         List<PontoSerieResponse> serie = previsaoRepository
-                .agregarSeriePorMedicamento(medicamento.getId())
+                .agregarSeriePorMedicamento(medicamento.getId(), unidadeId)
                 .stream()
                 .map(this::paraPontoSerie)
                 .toList();
@@ -173,8 +190,8 @@ public class PainelService {
                 serie);
     }
 
-    private Medicamento medicamentoMaisCritico() {
-        List<Object[]> ranking = posicaoRepository.contarCriticosPorMedicamento(PageRequest.of(0, 1));
+    private Medicamento medicamentoMaisCritico(UUID unidadeId) {
+        List<Object[]> ranking = posicaoRepository.contarCriticosPorMedicamento(unidadeId, PageRequest.of(0, 1));
         if (!ranking.isEmpty()) {
             UUID medicamentoId = (UUID) ranking.getFirst()[0];
             return medicamentoRepository.findById(medicamentoId).orElse(medicamentoFallback());
@@ -187,17 +204,19 @@ public class PainelService {
                 .orElseGet(() -> medicamentoRepository.findAll(PageRequest.of(0, 1)).getContent().getFirst());
     }
 
-    private List<AlertaResponse> alertasRecentes(int limite) {
+    private List<AlertaResponse> alertasRecentes(int limite, UUID unidadeId, UUID medicamentoId) {
         return alertaRepository
-                .findUrgentesNaoResolvidos(StatusAlerta.RESOLVIDO, PageRequest.of(0, limite))
+                .findUrgentesNaoResolvidosFiltrado(StatusAlerta.RESOLVIDO, unidadeId, medicamentoId,
+                        PageRequest.of(0, limite))
                 .stream()
                 .map(AlertaResponse::de)
                 .toList();
     }
 
-    private List<RecomendacaoResponse> recomendacoesPendentes(int limite) {
+    private List<RecomendacaoResponse> recomendacoesPendentes(int limite, UUID unidadeId, UUID medicamentoId) {
         return recomendacaoRepository
-                .findPendentesPorImpacto(StatusRecomendacao.PENDENTE, PageRequest.of(0, limite))
+                .findPendentesPorImpactoFiltrado(StatusRecomendacao.PENDENTE, unidadeId, medicamentoId,
+                        PageRequest.of(0, limite))
                 .stream()
                 .map(RecomendacaoResponse::de)
                 .toList();

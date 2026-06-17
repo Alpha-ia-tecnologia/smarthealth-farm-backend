@@ -1,6 +1,8 @@
 package com.alphatech.cahosp.medicamento;
 
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
@@ -44,6 +46,9 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
 
     @Autowired
     private UsuarioRepository usuarioRepository;
+
+    @Autowired
+    private UnidadeRepository unidadeRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -113,6 +118,35 @@ class MedicamentoIT extends BaseIntegracaoPostgres {
                         .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].codigo").value("MED-007"));
+    }
+
+    @Test
+    @DisplayName("Filtro ?unidadeId= lista so medicamentos com posicao na unidade")
+    void filtroPorUnidade() throws Exception {
+        UUID atendidaId = unidadeRepository.findAll().stream()
+                .filter(u -> !u.isHub()).findFirst().orElseThrow().getId();
+        UUID hubId = unidadeRepository.findAll().stream()
+                .filter(Unidade::isHub).findFirst().orElseThrow().getId();
+
+        // Unidade atendida recebe posicao de todos os 30 itens semeados (EstoqueSeeder).
+        mvc.perform(get("/medicamentos").param("unidadeId", atendidaId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(30));
+
+        // Hub logistico (CAHOSP) nao consome diretamente — sem posicoes, lista vazia.
+        mvc.perform(get("/medicamentos").param("unidadeId", hubId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+
+        // Combina com os demais filtros (familia) dentro da unidade.
+        mvc.perform(get("/medicamentos")
+                        .param("unidadeId", atendidaId.toString())
+                        .param("familia", "Antibióticos")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(5));
     }
 
     @Test

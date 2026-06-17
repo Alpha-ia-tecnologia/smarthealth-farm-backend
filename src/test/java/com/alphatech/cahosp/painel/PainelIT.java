@@ -1,6 +1,8 @@
 package com.alphatech.cahosp.painel;
 
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
@@ -37,6 +39,7 @@ class PainelIT extends BaseIntegracaoPostgres {
     @Autowired private MockMvc mvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private UnidadeRepository unidadeRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private String token;
@@ -110,5 +113,36 @@ class PainelIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.data.unidades[0].conectividade").exists())
                 .andExpect(jsonPath("$.data.alertasAtivos").isArray())
                 .andExpect(jsonPath("$.data.recomendacoesAbertas").isArray());
+    }
+
+    @Test
+    @DisplayName("Dashboard com ?unidadeId= filtra os totais, mas a cobertura segue a rede inteira")
+    void dashboardFiltradoPorUnidade() throws Exception {
+        UUID unidadeId = unidadeAtendida();
+        mvc.perform(get("/painel").param("unidadeId", unidadeId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                // Totais refletem a unidade (1 unidade no escopo).
+                .andExpect(jsonPath("$.data.totais.unidades").value(1))
+                // Cobertura por unidade permanece cross-unidade (todas as 7 atendidas).
+                .andExpect(jsonPath("$.data.coberturaPorUnidade.length()").value(7))
+                .andExpect(jsonPath("$.data.serieAgregada.serie").isArray());
+    }
+
+    @Test
+    @DisplayName("Operacional com ?unidadeId= restringe a situacao a uma unica unidade")
+    void operacionalFiltradoPorUnidade() throws Exception {
+        UUID unidadeId = unidadeAtendida();
+        mvc.perform(get("/painel/operacional").param("unidadeId", unidadeId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unidades.length()").value(1))
+                .andExpect(jsonPath("$.data.unidades[0].unidadeId").value(unidadeId.toString()));
+    }
+
+    /** Uma unidade atendida (nao-hub) qualquer — todas tem estoque/posicoes semeadas. */
+    private UUID unidadeAtendida() {
+        return unidadeRepository.findAll().stream()
+                .filter(u -> !u.isHub()).findFirst().orElseThrow().getId();
     }
 }

@@ -1,8 +1,12 @@
 package com.alphatech.cahosp.recomendacao;
 
+import com.alphatech.cahosp.medicamento.MedicamentoRepository;
+import com.alphatech.cahosp.medicamento.dominio.Medicamento;
 import com.alphatech.cahosp.recomendacao.dominio.Recomendacao;
 import com.alphatech.cahosp.recomendacao.dominio.StatusRecomendacao;
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
+import com.alphatech.cahosp.unidade.dominio.Unidade;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
@@ -23,6 +27,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -42,6 +47,8 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private RecomendacaoRepository recomendacaoRepository;
+    @Autowired private MedicamentoRepository medicamentoRepository;
+    @Autowired private UnidadeRepository unidadeRepository;
 
     private String tokenGestor;
     private String tokenOperador;
@@ -140,6 +147,16 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
     }
 
     @Test
+    @DisplayName("Resumo com ?unidadeId inexistente zera os KPIs (filtro aplicado)")
+    void resumoFiltrado() throws Exception {
+        mvc.perform(get("/recomendacoes/resumo").param("unidadeId", java.util.UUID.randomUUID().toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(0))
+                .andExpect(jsonPath("$.data.pendentes").value(0));
+    }
+
+    @Test
     @DisplayName("Gestor aprova (Pendente->Aprovada) e executa (Aprovada->Executada)")
     void aprovarEExecutar() throws Exception {
         mvc.perform(post("/recomendacoes/" + pendenteId + "/aprovar")
@@ -196,5 +213,106 @@ class RecomendacaoIT extends BaseIntegracaoPostgres {
         mvc.perform(post("/recomendacoes/gerar").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.codigo").value("ACESSO_NEGADO"));
+    }
+
+    private String corpoTransferencia(UUID medicamentoId, UUID origemId, UUID destinoId, int quantidade) {
+        return """
+                {"medicamentoId":"%s","unidadeOrigemId":"%s","unidadeDestinoId":"%s","quantidade":%d}
+                """.formatted(medicamentoId, origemId, destinoId, quantidade);
+    }
+
+    @Test
+    @DisplayName("Gestor cria transferencia manual (201): Redistribuição/Manual/Pendente")
+    void criarTransferenciaComoGestor() throws Exception {
+        Medicamento med = medicamentoRepository.findAll().get(0);
+        java.util.List<Unidade> unidades = unidadeRepository.findAll();
+        UUID origem = unidades.get(0).getId();
+        UUID destino = unidades.get(1).getId();
+
+        mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), origem, destino, 50)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.tipo").value("Redistribuição"))
+                .andExpect(jsonPath("$.data.origemMotor").value("Manual"))
+                .andExpect(jsonPath("$.data.status").value("Pendente"))
+                .andExpect(jsonPath("$.data.quantidade").value(50));
+    }
+
+    @Test
+    @DisplayName("Criar com origem igual ao destino => 422 REGRA_NEGOCIO")
+    void criarComOrigemIgualDestino() throws Exception {
+        Medicamento med = medicamentoRepository.findAll().get(0);
+        UUID mesma = unidadeRepository.findAll().get(0).getId();
+
+        mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), mesma, mesma, 10)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.codigo").value("REGRA_NEGOCIO"));
+    }
+
+    @Test
+    @DisplayName("Criar com quantidade zero => 400 VALIDACAO")
+    void criarComQuantidadeZero() throws Exception {
+        Medicamento med = medicamentoRepository.findAll().get(0);
+        java.util.List<Unidade> unidades = unidadeRepository.findAll();
+
+        mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), unidades.get(0).getId(), unidades.get(1).getId(), 0)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.codigo").value("VALIDACAO"));
+    }
+
+    @Test
+    @DisplayName("Operador nao pode criar transferencia => 403 ACESSO_NEGADO")
+    void criarComoOperador() throws Exception {
+        Medicamento med = medicamentoRepository.findAll().get(0);
+        java.util.List<Unidade> unidades = unidadeRepository.findAll();
+
+        mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenOperador))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), unidades.get(0).getId(), unidades.get(1).getId(), 30)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.codigo").value("ACESSO_NEGADO"));
+    }
+
+    @Test
+    @DisplayName("Gestor edita uma transferencia recém-criada (200): nova quantidade, segue Pendente")
+    void editarTransferencia() throws Exception {
+        Medicamento med = medicamentoRepository.findAll().get(0);
+        java.util.List<Unidade> unidades = unidadeRepository.findAll();
+        UUID origem = unidades.get(0).getId();
+        UUID destino = unidades.get(1).getId();
+
+        MvcResult criada = mvc.perform(post("/recomendacoes").header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), origem, destino, 50)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String novaId = objectMapper.readTree(criada.getResponse().getContentAsString())
+                .path("data").path("id").asText();
+
+        mvc.perform(put("/recomendacoes/" + novaId).header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(corpoTransferencia(med.getId(), origem, destino, 80)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.quantidade").value(80))
+                .andExpect(jsonPath("$.data.status").value("Pendente"));
+    }
+
+    @Test
+    @DisplayName("Gestor recusa uma pendente (Pendente->Recusada); recusar de novo => 422")
+    void recusarPendente() throws Exception {
+        mvc.perform(post("/recomendacoes/" + pendenteId + "/recusar")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("Recusada"));
+
+        mvc.perform(post("/recomendacoes/" + pendenteId + "/recusar")
+                        .header(HttpHeaders.AUTHORIZATION, bearer(tokenGestor)))
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.codigo").value("REGRA_NEGOCIO"));
     }
 }

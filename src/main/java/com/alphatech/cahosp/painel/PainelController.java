@@ -8,7 +8,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.UUID;
 
 /**
  * Agregacoes de dashboard (RF-DASH-01/02). Modulo somente leitura — disponivel para qualquer
@@ -26,14 +29,19 @@ public class PainelController {
     }
 
     @GetMapping
-    @Operation(summary = "Dashboard gerencial: totais, cobertura, serie agregada, alertas e recomendacoes")
-    public ResponseEntity<ApiResponse<PainelGerencialResponse>> dashboard() {
-        return ResponseEntity.ok(ApiResponse.ok(painelService.dashboard()));
+    @Operation(summary = "Dashboard gerencial: totais, cobertura, serie agregada, alertas e recomendacoes "
+            + "(filtro opcional por unidade; cobertura por unidade permanece da rede inteira)")
+    public ResponseEntity<ApiResponse<PainelGerencialResponse>> dashboard(
+            @RequestParam(required = false) UUID unidadeId) {
+        return ResponseEntity.ok(ApiResponse.ok(painelService.dashboard(unidadeId)));
     }
 
     @GetMapping("/operacional")
-    @Operation(summary = "Painel operacional: situacao por unidade, fila de alertas e recomendacoes em aberto")
-    public ResponseEntity<ApiResponse<PainelOperacionalResponse>> operacional() {
-        return ResponseEntity.ok(ApiResponse.ok(painelService.operacional()));
+    @Operation(summary = "Painel operacional: situacao por unidade, fila de alertas e recomendacoes em aberto "
+            + "(filtros opcionais por unidade e medicamento)")
+    public ResponseEntity<ApiResponse<PainelOperacionalResponse>> operacional(
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID medicamentoId) {
+        return ResponseEntity.ok(ApiResponse.ok(painelService.operacional(unidadeId, medicamentoId)));
     }
 }
