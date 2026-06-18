@@ -9,9 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Indicadores de desempenho do projeto frente as metas do edital (RF-IND). Modulo de governanca,
@@ -29,9 +31,13 @@ public class IndicadorController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista os indicadores com historico, progresso, meta atingida e variacao")
-    public ResponseEntity<ApiResponse<List<IndicadorResponse>>> listar() {
-        return ResponseEntity.ok(ApiResponse.lista(indicadorService.listar()));
+    @Operation(summary = "Lista os indicadores com historico, progresso, meta atingida e variacao. "
+            + "Filtros opcionais por unidade/insumo recalculam o valor atual no escopo "
+            + "(baseline/meta/historico seguem do edital)")
+    public ResponseEntity<ApiResponse<List<IndicadorResponse>>> listar(
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.lista(indicadorService.listar(unidadeId, insumoId)));
     }
 
     @GetMapping("/resumo")

@@ -42,6 +42,32 @@ public interface PosicaoEstoqueRepository
     long contarCriticosFiltrado(@Param("unidadeId") UUID unidadeId,
                                 @Param("insumoId") UUID insumoId);
 
+    /**
+     * Total de posicoes de insumos <strong>essenciais</strong> no escopo (filtros opcionais de
+     * unidade/insumo) — denominador da Taxa de desabastecimento de essenciais (RF-IND-01).
+     */
+    @Query("""
+            SELECT COUNT(p) FROM PosicaoEstoque p
+            WHERE p.insumo.essencial = true
+              AND (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
+            """)
+    long contarEssenciais(@Param("unidadeId") UUID unidadeId,
+                          @Param("insumoId") UUID insumoId);
+
+    /**
+     * Posicoes de insumos <strong>essenciais</strong> em nivel critico no escopo — numerador da
+     * Taxa de desabastecimento de essenciais (RF-IND-01).
+     */
+    @Query("""
+            SELECT COUNT(p) FROM PosicaoEstoque p
+            WHERE p.insumo.essencial = true AND p.quantidade < p.nivelCritico
+              AND (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
+            """)
+    long contarEssenciaisCriticos(@Param("unidadeId") UUID unidadeId,
+                                  @Param("insumoId") UUID insumoId);
+
     /** Insumos distintos com posicao no escopo (filtros opcionais de unidade/insumo). */
     @Query("""
             SELECT COUNT(DISTINCT p.insumo.id) FROM PosicaoEstoque p

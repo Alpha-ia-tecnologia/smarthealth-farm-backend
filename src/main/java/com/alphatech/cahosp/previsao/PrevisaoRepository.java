@@ -83,6 +83,19 @@ public interface PrevisaoRepository extends JpaRepository<Previsao, UUID> {
     List<SeriePeriodoAgregada> agregarSeriePorInsumo(@Param("insumoId") UUID insumoId,
                                                           @Param("unidadeId") UUID unidadeId);
 
+    /**
+     * MAPE medio das previsoes no escopo (filtros opcionais de unidade/insumo) — base da
+     * Assertividade da previsao (100 - MAPE) do dashboard filtrado. {@code null} se nao ha
+     * previsao no escopo. RF-IND/RF-PRV.
+     */
+    @Query("""
+            SELECT AVG(p.mape) FROM Previsao p
+            WHERE (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
+              AND (:insumoId IS NULL OR p.insumo.id = :insumoId)
+            """)
+    java.math.BigDecimal mediaMape(@Param("unidadeId") UUID unidadeId,
+                                   @Param("insumoId") UUID insumoId);
+
     /** Previsao com a serie temporal carregada (drill-down/grafico). RF-PRV-02. */
     @Query("""
             SELECT DISTINCT p FROM Previsao p

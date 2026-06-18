@@ -42,6 +42,17 @@ public record IndicadorResponse(
 ) {
 
     public static IndicadorResponse de(IndicadorMeta i, CalculadoraIndicador calculadora) {
+        return de(i, calculadora, i.getAtual(), i.getNumeradorAbsoluto(), i.getDenominadorAbsoluto());
+    }
+
+    /**
+     * Variante com o {@code atual} (e o lastro absoluto) sobrescritos pelo escopo de um filtro
+     * (unidade/insumo). {@code baseline}, {@code meta} e {@code historico} permanecem do edital;
+     * as derivacoes (progresso/atingiu/variacao) sao recalculadas sobre o {@code atual} fornecido.
+     */
+    public static IndicadorResponse de(IndicadorMeta i, CalculadoraIndicador calculadora,
+                                       BigDecimal atual, BigDecimal numeradorAbsoluto,
+                                       BigDecimal denominadorAbsoluto) {
         List<PontoHistoricoResponse> historico = i.getHistorico().stream()
                 .map(PontoHistoricoResponse::de)
                 .toList();
@@ -51,15 +62,15 @@ public record IndicadorResponse(
                 i.getNome(),
                 i.getUnidadeMedida(),
                 i.getBaseline(),
-                i.getAtual(),
+                atual,
                 i.getMeta(),
                 i.getMetaReducaoPct(),
                 i.isMelhorMenor(),
-                calculadora.progresso(i),
-                calculadora.atingiu(i),
-                calculadora.variacaoPct(i),
-                i.getNumeradorAbsoluto(),
-                i.getDenominadorAbsoluto(),
+                calculadora.progresso(i.getBaseline(), atual, i.getMeta()),
+                calculadora.atingiu(atual, i.getMeta(), i.isMelhorMenor()),
+                calculadora.variacaoPct(i.getBaseline(), atual),
+                numeradorAbsoluto,
+                denominadorAbsoluto,
                 i.getUnidadeAbsoluta(),
                 historico);
     }
