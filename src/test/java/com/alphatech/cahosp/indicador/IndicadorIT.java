@@ -84,6 +84,10 @@ class IndicadorIT extends BaseIntegracaoPostgres {
                 .andExpect(jsonPath("$.data[0].meta").exists())
                 .andExpect(jsonPath("$.data[0].progresso").isNumber())
                 .andExpect(jsonPath("$.data[0].atingiu").isBoolean())
+                // Lastro em numeros reais da taxa de desabastecimento (9 de 80 itens essenciais).
+                .andExpect(jsonPath("$.data[0].numeradorAbsoluto").isNumber())
+                .andExpect(jsonPath("$.data[0].denominadorAbsoluto").isNumber())
+                .andExpect(jsonPath("$.data[0].unidadeAbsoluta").value("itens essenciais"))
                 .andExpect(jsonPath("$.data[0].historico").isArray())
                 .andExpect(jsonPath("$.data[0].historico.length()").value(12));
     }

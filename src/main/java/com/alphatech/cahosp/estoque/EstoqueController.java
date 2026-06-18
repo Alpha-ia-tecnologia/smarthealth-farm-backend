@@ -2,6 +2,7 @@ package com.alphatech.cahosp.estoque;
 
 import com.alphatech.cahosp.comum.ApiResponse;
 import com.alphatech.cahosp.estoque.dominio.StatusEstoque;
+import com.alphatech.cahosp.estoque.dto.CurvaAbcResponse;
 import com.alphatech.cahosp.estoque.dto.PosicaoEstoqueDetalheResponse;
 import com.alphatech.cahosp.estoque.dto.PosicaoEstoqueResponse;
 import com.alphatech.cahosp.estoque.dto.ResumoEstoqueResponse;
@@ -29,9 +30,11 @@ import java.util.UUID;
 public class EstoqueController {
 
     private final EstoqueConsultaService consultaService;
+    private final CurvaAbcService curvaAbcService;
 
-    public EstoqueController(EstoqueConsultaService consultaService) {
+    public EstoqueController(EstoqueConsultaService consultaService, CurvaAbcService curvaAbcService) {
         this.consultaService = consultaService;
+        this.curvaAbcService = curvaAbcService;
     }
 
     @GetMapping
@@ -53,6 +56,12 @@ public class EstoqueController {
             @RequestParam(required = false) UUID unidadeId,
             @RequestParam(required = false) UUID insumoId) {
         return ResponseEntity.ok(ApiResponse.ok(consultaService.resumo(unidadeId, insumoId)));
+    }
+
+    @GetMapping("/curva-abc")
+    @Operation(summary = "Curva ABC dos insumos por valor de consumo (consumo medio diario x custo unitario)")
+    public ResponseEntity<ApiResponse<CurvaAbcResponse>> curvaAbc() {
+        return ResponseEntity.ok(ApiResponse.ok(curvaAbcService.calcular()));
     }
 
     @GetMapping("/{insumoId}/{unidadeId}")

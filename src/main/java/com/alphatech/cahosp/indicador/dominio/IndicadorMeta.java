@@ -65,6 +65,18 @@ public class IndicadorMeta {
     @Column(nullable = false)
     private int ordem;
 
+    // Valor absoluto que dá lastro à taxa (ex.: "9 de 80 itens essenciais" por trás de 11,2% de
+    // desabastecimento). Opcional: nulo onde a unidade já é absoluta (R$/dias/un) ou onde não há
+    // contagem (MAPE). RF-IND.
+    @Column(name = "numerador_absoluto", precision = 12, scale = 2)
+    private BigDecimal numeradorAbsoluto;
+
+    @Column(name = "denominador_absoluto", precision = 12, scale = 2)
+    private BigDecimal denominadorAbsoluto;
+
+    @Column(name = "unidade_absoluta", length = 30)
+    private String unidadeAbsoluta;
+
     @OneToMany(mappedBy = "indicador", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("ordem ASC")
     private List<PontoHistorico> historico = new ArrayList<>();
@@ -108,6 +120,16 @@ public class IndicadorMeta {
         this.historico.add(ponto);
     }
 
+    /**
+     * Define o valor absoluto que dá lastro à taxa (ex.: 9 de 80 itens essenciais para uma taxa de
+     * desabastecimento de 11,2%). Só se aplica a indicadores de taxa; nos demais permanece nulo.
+     */
+    public void definirAbsoluto(BigDecimal numerador, BigDecimal denominador, String unidade) {
+        this.numeradorAbsoluto = numerador;
+        this.denominadorAbsoluto = denominador;
+        this.unidadeAbsoluta = unidade;
+    }
+
     public UUID getId() {
         return id;
     }
@@ -146,6 +168,18 @@ public class IndicadorMeta {
 
     public int getOrdem() {
         return ordem;
+    }
+
+    public BigDecimal getNumeradorAbsoluto() {
+        return numeradorAbsoluto;
+    }
+
+    public BigDecimal getDenominadorAbsoluto() {
+        return denominadorAbsoluto;
+    }
+
+    public String getUnidadeAbsoluta() {
+        return unidadeAbsoluta;
     }
 
     public List<PontoHistorico> getHistorico() {
