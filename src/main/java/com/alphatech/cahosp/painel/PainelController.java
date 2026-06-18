@@ -30,10 +30,11 @@ public class PainelController {
 
     @GetMapping
     @Operation(summary = "Dashboard gerencial: totais, cobertura, serie agregada, alertas e recomendacoes "
-            + "(filtro opcional por unidade; cobertura por unidade permanece da rede inteira)")
+            + "(filtros opcionais por unidade e insumo; cobertura por unidade permanece da rede inteira)")
     public ResponseEntity<ApiResponse<PainelGerencialResponse>> dashboard(
-            @RequestParam(required = false) UUID unidadeId) {
-        return ResponseEntity.ok(ApiResponse.ok(painelService.dashboard(unidadeId)));
+            @RequestParam(required = false) UUID unidadeId,
+            @RequestParam(required = false) UUID insumoId) {
+        return ResponseEntity.ok(ApiResponse.ok(painelService.dashboard(unidadeId, insumoId)));
     }
 
     @GetMapping("/operacional")

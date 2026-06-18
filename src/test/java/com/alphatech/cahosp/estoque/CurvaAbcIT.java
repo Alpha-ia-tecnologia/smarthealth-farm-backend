@@ -1,6 +1,7 @@
 package com.alphatech.cahosp.estoque;
 
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
+import com.alphatech.cahosp.unidade.UnidadeRepository;
 import com.alphatech.cahosp.usuario.UsuarioRepository;
 import com.alphatech.cahosp.usuario.dominio.Perfil;
 import com.alphatech.cahosp.usuario.dominio.Usuario;
@@ -40,6 +41,7 @@ class CurvaAbcIT extends BaseIntegracaoPostgres {
     @Autowired private MockMvc mvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UsuarioRepository usuarioRepository;
+    @Autowired private UnidadeRepository unidadeRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private String token;
@@ -79,5 +81,40 @@ class CurvaAbcIT extends BaseIntegracaoPostgres {
                 // resumo sempre traz as tres classes
                 .andExpect(jsonPath("$.data.resumo.length()").value(3))
                 .andExpect(jsonPath("$.data.resumo[0].classe").value("A"));
+    }
+
+    @Test
+    @DisplayName("Com ?unidadeId= restringe a Curva ABC ao consumo daquela unidade (subconjunto da rede)")
+    void curvaAbcFiltradaPorUnidade() throws Exception {
+        UUID unidadeId = unidadeRepository.findAll().stream()
+                .filter(u -> !u.isHub()).findFirst().orElseThrow().getId();
+
+        double totalRede = somarValorConsumo(null);
+        double totalUnidade = somarValorConsumo(unidadeId);
+
+        // O consumo de uma unica unidade nunca supera o da rede inteira, e ha consumo a classificar.
+        org.assertj.core.api.Assertions.assertThat(totalUnidade).isGreaterThan(0.0);
+        org.assertj.core.api.Assertions.assertThat(totalUnidade).isLessThan(totalRede);
+
+        // Mesmo filtrada, a resposta mantem o contrato (resumo com as tres classes).
+        mvc.perform(get("/estoque/curva-abc").param("unidadeId", unidadeId.toString())
+                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resumo.length()").value(3));
+    }
+
+    /** Soma o valorConsumo de todos os itens da Curva ABC (rede ou de uma unidade). */
+    private double somarValorConsumo(UUID unidadeId) throws Exception {
+        var req = get("/estoque/curva-abc").header(HttpHeaders.AUTHORIZATION, "Bearer " + token);
+        if (unidadeId != null) {
+            req = req.param("unidadeId", unidadeId.toString());
+        }
+        MvcResult res = mvc.perform(req).andExpect(status().isOk()).andReturn();
+        double total = 0.0;
+        for (var item : objectMapper.readTree(res.getResponse().getContentAsString())
+                .path("data").path("itens")) {
+            total += item.path("valorConsumo").asDouble();
+        }
+        return total;
     }
 }

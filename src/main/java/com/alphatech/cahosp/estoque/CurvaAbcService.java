@@ -40,8 +40,20 @@ public class CurvaAbcService {
     /** Dado agregado de um insumo antes da classificacao. */
     private record Dado(Insumo insumo, long consumo, BigDecimal valor) {}
 
+    /**
+     * Curva ABC da rede inteira (sem filtro). RF-EST.
+     */
     @Transactional(readOnly = true)
     public CurvaAbcResponse calcular() {
+        return calcular(null);
+    }
+
+    /**
+     * Curva ABC com filtro opcional de unidade: {@code unidadeId} restringe o consumo agregado a uma
+     * unica unidade; {@code null} = rede inteira. RF-EST/RF-DASH.
+     */
+    @Transactional(readOnly = true)
+    public CurvaAbcResponse calcular(UUID unidadeId) {
         Map<UUID, Insumo> insumos = new HashMap<>();
         for (Insumo i : insumoRepository.findAll()) {
             insumos.put(i.getId(), i);
@@ -49,7 +61,7 @@ public class CurvaAbcService {
 
         Map<UUID, Dado> dados = new LinkedHashMap<>();
         List<CalculadoraCurvaAbc.Entrada> entradas = new ArrayList<>();
-        for (Object[] linha : posicaoRepository.somarConsumoPorInsumo()) {
+        for (Object[] linha : posicaoRepository.somarConsumoPorInsumoFiltrado(unidadeId)) {
             UUID insumoId = (UUID) linha[0];
             long consumo = ((Number) linha[1]).longValue();
             Insumo insumo = insumos.get(insumoId);
