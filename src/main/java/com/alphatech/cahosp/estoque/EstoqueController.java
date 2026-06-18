@@ -59,9 +59,11 @@ public class EstoqueController {
     }
 
     @GetMapping("/curva-abc")
-    @Operation(summary = "Curva ABC dos insumos por valor de consumo (consumo medio diario x custo unitario)")
-    public ResponseEntity<ApiResponse<CurvaAbcResponse>> curvaAbc() {
-        return ResponseEntity.ok(ApiResponse.ok(curvaAbcService.calcular()));
+    @Operation(summary = "Curva ABC dos insumos por valor de consumo (consumo medio diario x custo unitario); "
+            + "filtro opcional por unidade")
+    public ResponseEntity<ApiResponse<CurvaAbcResponse>> curvaAbc(
+            @RequestParam(required = false) UUID unidadeId) {
+        return ResponseEntity.ok(ApiResponse.ok(curvaAbcService.calcular(unidadeId)));
     }
 
     @GetMapping("/{insumoId}/{unidadeId}")

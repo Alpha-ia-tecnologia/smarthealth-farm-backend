@@ -55,14 +55,16 @@ public interface PosicaoEstoqueRepository
     List<PosicaoEstoque> findByUnidadeId(UUID unidadeId);
 
     /**
-     * Consumo medio diario total por insumo (somado sobre as unidades da rede) — base da Curva ABC
-     * (RF-EST). Retorna pares [insumoId, somaConsumo].
+     * Consumo medio diario total por insumo (somado sobre as unidades) — base da Curva ABC
+     * (RF-EST/RF-DASH). O filtro opcional {@code unidadeId} restringe a uma unica unidade
+     * ({@code null} = rede inteira). Retorna pares [insumoId, somaConsumo].
      */
     @Query("""
             SELECT p.insumo.id, SUM(p.consumoMedioDiario) FROM PosicaoEstoque p
+            WHERE (:unidadeId IS NULL OR p.unidade.id = :unidadeId)
             GROUP BY p.insumo.id
             """)
-    List<Object[]> somarConsumoPorInsumo();
+    List<Object[]> somarConsumoPorInsumoFiltrado(@Param("unidadeId") UUID unidadeId);
 
     /** Posicoes com filtros opcionais de unidade/insumo (KPIs do resumo de estoque filtrado). */
     @Query("""

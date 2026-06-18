@@ -1,5 +1,6 @@
 package com.alphatech.cahosp.painel;
 
+import com.alphatech.cahosp.insumo.InsumoRepository;
 import com.alphatech.cahosp.suporte.BaseIntegracaoPostgres;
 import com.alphatech.cahosp.unidade.UnidadeRepository;
 import com.alphatech.cahosp.unidade.dominio.Unidade;
@@ -40,6 +41,7 @@ class PainelIT extends BaseIntegracaoPostgres {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UsuarioRepository usuarioRepository;
     @Autowired private UnidadeRepository unidadeRepository;
+    @Autowired private InsumoRepository insumoRepository;
     @Autowired private PasswordEncoder passwordEncoder;
 
     private String token;
@@ -138,6 +140,30 @@ class PainelIT extends BaseIntegracaoPostgres {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.unidades.length()").value(1))
                 .andExpect(jsonPath("$.data.unidades[0].unidadeId").value(unidadeId.toString()));
+    }
+
+    @Test
+    @DisplayName("Dashboard com ?insumoId= troca a serie agregada para o insumo escolhido")
+    void dashboardFiltradoPorInsumo() throws Exception {
+        // Insumo escolhido por padrao (mais critico) — base para escolher um insumo DIFERENTE.
+        MvcResult padrao = mvc.perform(get("/painel").header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andReturn();
+        String insumoPadrao = objectMapper.readTree(padrao.getResponse().getContentAsString())
+                .path("data").path("serieAgregada").path("insumoId").asText();
+
+        UUID outroInsumo = insumoRepository.findAll().stream()
+                .map(i -> i.getId())
+                .filter(id -> !id.toString().equals(insumoPadrao))
+                .findFirst().orElseThrow();
+
+        // Com o filtro, a serie agregada passa a ser a do insumo escolhido (nao mais a do padrao).
+        mvc.perform(get("/painel").param("insumoId", outroInsumo.toString())
+                        .header(HttpHeaders.AUTHORIZATION, bearer()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.serieAgregada.insumoId").value(outroInsumo.toString()))
+                // Cobertura por unidade permanece cross-unidade (nao afetada pelo filtro de insumo).
+                .andExpect(jsonPath("$.data.coberturaPorUnidade.length()").value(7));
     }
 
     /** Uma unidade atendida (nao-hub) qualquer — todas tem estoque/posicoes semeadas. */

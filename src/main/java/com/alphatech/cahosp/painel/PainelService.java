@@ -78,21 +78,22 @@ public class PainelService {
     }
 
     /**
-     * Dashboard gerencial consolidado (RF-DASH-01). O filtro opcional {@code unidadeId} reaplica
-     * em totais, serie agregada (Demanda x Previsao), alertas recentes e recomendacoes pendentes;
-     * a <strong>cobertura por unidade</strong> permanece a rede inteira (visao cross-unidade).
+     * Dashboard gerencial consolidado (RF-DASH-01). Os filtros opcionais {@code unidadeId} e
+     * {@code insumoId} reaplicam em totais, serie agregada (Demanda x Previsao), alertas recentes
+     * e recomendacoes pendentes; a <strong>cobertura por unidade</strong> permanece a rede inteira
+     * (visao cross-unidade).
      */
-    public PainelGerencialResponse dashboard(UUID unidadeId) {
+    public PainelGerencialResponse dashboard(UUID unidadeId, UUID insumoId) {
         // Cobertura por unidade e sempre a rede toda, independente do filtro.
         List<ResumoUnidadeResponse> resumos = resumosUnidades(null);
         return new PainelGerencialResponse(
-                montarTotais(unidadeId, null),
+                montarTotais(unidadeId, insumoId),
                 resumos.stream()
                         .map(r -> new CoberturaUnidadeResponse(r.sigla(), r.cobertura(), r.statusCobertura()))
                         .toList(),
-                montarSerieAgregada(unidadeId),
-                alertasRecentes(6, unidadeId, null),
-                recomendacoesPendentes(4, unidadeId, null));
+                montarSerieAgregada(unidadeId, insumoId),
+                alertasRecentes(6, unidadeId, insumoId),
+                recomendacoesPendentes(4, unidadeId, insumoId));
     }
 
     /**
@@ -176,8 +177,14 @@ public class PainelService {
                 calculadoraPainel.statusUnidade(criticos));
     }
 
-    private SerieAgregadaResponse montarSerieAgregada(UUID unidadeId) {
-        Insumo insumo = insumoMaisCritico(unidadeId);
+    /**
+     * Serie agregada (Demanda x Previsao) do dashboard: usa o {@code insumoId} escolhido no filtro;
+     * sem filtro, escolhe o insumo mais critico do escopo. RF-DASH/RF-PRV-02.
+     */
+    private SerieAgregadaResponse montarSerieAgregada(UUID unidadeId, UUID insumoId) {
+        Insumo insumo = insumoId != null
+                ? insumoRepository.findById(insumoId).orElseGet(() -> insumoMaisCritico(unidadeId))
+                : insumoMaisCritico(unidadeId);
         List<PontoSerieResponse> serie = previsaoRepository
                 .agregarSeriePorInsumo(insumo.getId(), unidadeId)
                 .stream()
