@@ -54,6 +54,16 @@ public interface PosicaoEstoqueRepository
     /** Posicoes de uma unidade (resumo operacional do painel). RF-DASH-02. */
     List<PosicaoEstoque> findByUnidadeId(UUID unidadeId);
 
+    /**
+     * Consumo medio diario total por insumo (somado sobre as unidades da rede) — base da Curva ABC
+     * (RF-EST). Retorna pares [insumoId, somaConsumo].
+     */
+    @Query("""
+            SELECT p.insumo.id, SUM(p.consumoMedioDiario) FROM PosicaoEstoque p
+            GROUP BY p.insumo.id
+            """)
+    List<Object[]> somarConsumoPorInsumo();
+
     /** Posicoes com filtros opcionais de unidade/insumo (KPIs do resumo de estoque filtrado). */
     @Query("""
             SELECT p FROM PosicaoEstoque p

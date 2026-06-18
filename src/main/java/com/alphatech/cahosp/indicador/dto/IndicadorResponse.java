@@ -17,6 +17,10 @@ import java.util.UUID;
  *       atual (RF-IND-06); {@code null} quando a base e zero.</li>
  * </ul>
  * {@code unidade} e a unidade de medida ({@code %}, {@code dias}, {@code R$ mil}, ...).
+ *
+ * <p>{@code numeradorAbsoluto}/{@code denominadorAbsoluto}/{@code unidadeAbsoluta} dao o lastro em
+ * numeros reais por tras de uma taxa (ex.: "9 de 80 itens essenciais" para 11,2% de
+ * desabastecimento). {@code null} onde nao se aplica (unidade ja absoluta, ou MAPE).
  */
 public record IndicadorResponse(
         UUID id,
@@ -31,6 +35,9 @@ public record IndicadorResponse(
         int progresso,
         boolean atingiu,
         Integer variacaoPct,
+        BigDecimal numeradorAbsoluto,
+        BigDecimal denominadorAbsoluto,
+        String unidadeAbsoluta,
         List<PontoHistoricoResponse> historico
 ) {
 
@@ -51,6 +58,9 @@ public record IndicadorResponse(
                 calculadora.progresso(i),
                 calculadora.atingiu(i),
                 calculadora.variacaoPct(i),
+                i.getNumeradorAbsoluto(),
+                i.getDenominadorAbsoluto(),
+                i.getUnidadeAbsoluta(),
                 historico);
     }
 }

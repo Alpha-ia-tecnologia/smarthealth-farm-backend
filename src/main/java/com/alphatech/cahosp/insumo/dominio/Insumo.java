@@ -12,6 +12,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -54,6 +55,12 @@ public class Insumo {
 
     @Column(nullable = false)
     private boolean essencial;
+
+    // Custo unitario (R$) na unidade de medida do insumo — base do valor de consumo na Curva ABC
+    // (RF-EST). Pode ser nulo (insumo recem-cadastrado sem custo informado); o seeder preenche os
+    // do catalogo demo.
+    @Column(name = "custo_unitario", precision = 12, scale = 2)
+    private BigDecimal custoUnitario;
 
     @Column(nullable = false)
     private boolean ativo = true;
@@ -160,6 +167,14 @@ public class Insumo {
 
     public void setEssencial(boolean essencial) {
         this.essencial = essencial;
+    }
+
+    public BigDecimal getCustoUnitario() {
+        return custoUnitario;
+    }
+
+    public void setCustoUnitario(BigDecimal custoUnitario) {
+        this.custoUnitario = custoUnitario;
     }
 
     public boolean isAtivo() {

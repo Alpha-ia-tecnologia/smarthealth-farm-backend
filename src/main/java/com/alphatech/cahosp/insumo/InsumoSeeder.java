@@ -9,7 +9,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Popula o catalogo de insumos/insumos no startup, idempotente — espelha fielmente
@@ -24,10 +28,36 @@ public class InsumoSeeder implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(InsumoSeeder.class);
 
+    /**
+     * Custo unitario (R$) de cada insumo do catalogo demo, na sua unidade de medida — base do valor
+     * de consumo da Curva ABC (RF-EST). Spread realista (de R$ 0,15 a R$ 120,00) para a curva ter
+     * itens A/B/C bem distribuidos. Backfillado nas linhas existentes de forma idempotente.
+     */
+    private static final Map<String, BigDecimal> CUSTO_UNITARIO = Map.ofEntries(
+            Map.entry("INS-001", bd("2.50")),  Map.entry("INS-002", bd("8.00")),
+            Map.entry("INS-003", bd("1.80")),  Map.entry("INS-004", bd("22.00")),
+            Map.entry("INS-005", bd("0.90")),  Map.entry("INS-006", bd("0.15")),
+            Map.entry("INS-007", bd("6.50")),  Map.entry("INS-008", bd("1.40")),
+            Map.entry("INS-009", bd("9.00")),  Map.entry("INS-010", bd("12.00")),
+            Map.entry("INS-011", bd("0.20")),  Map.entry("INS-012", bd("0.25")),
+            Map.entry("INS-013", bd("0.80")),  Map.entry("INS-014", bd("14.00")),
+            Map.entry("INS-015", bd("18.00")), Map.entry("INS-016", bd("3.20")),
+            Map.entry("INS-017", bd("3.80")),  Map.entry("INS-018", bd("25.00")),
+            Map.entry("INS-019", bd("120.00")), Map.entry("INS-020", bd("28.00")),
+            Map.entry("INS-021", bd("0.45")),  Map.entry("INS-022", bd("2.10")),
+            Map.entry("INS-023", bd("16.00")), Map.entry("INS-024", bd("1.10")),
+            Map.entry("INS-025", bd("0.95")),  Map.entry("INS-026", bd("0.30")),
+            Map.entry("INS-027", bd("7.50")),  Map.entry("INS-028", bd("0.40")),
+            Map.entry("INS-029", bd("0.35")),  Map.entry("INS-030", bd("0.60")));
+
     private final InsumoRepository insumoRepository;
 
     public InsumoSeeder(InsumoRepository insumoRepository) {
         this.insumoRepository = insumoRepository;
+    }
+
+    private static BigDecimal bd(String valor) {
+        return new BigDecimal(valor);
     }
 
     @Override
@@ -95,16 +125,28 @@ public class InsumoSeeder implements CommandLineRunner {
                         CategoriaInsumo.ANTIBIOTICOS, "cp", Criticidade.MEDIA, true)
         );
 
+        Map<String, Insumo> existentes = insumoRepository.findAll().stream()
+                .collect(Collectors.toMap(Insumo::getCodigo, Function.identity()));
+
         int inseridos = 0;
+        int custosBackfill = 0;
         for (Insumo m : catalogo) {
-            if (!insumoRepository.existsByCodigoIgnoreCase(m.getCodigo())) {
+            BigDecimal custo = CUSTO_UNITARIO.get(m.getCodigo());
+            Insumo existente = existentes.get(m.getCodigo());
+            if (existente == null) {
+                m.setCustoUnitario(custo);
                 insumoRepository.save(m);
                 inseridos++;
+            } else if (existente.getCustoUnitario() == null && custo != null) {
+                // Backfill idempotente do custo nas linhas que vieram antes da Curva ABC.
+                existente.setCustoUnitario(custo);
+                insumoRepository.save(existente);
+                custosBackfill++;
             }
         }
-        if (inseridos > 0) {
-            log.info("Catalogo de insumos semeado: {} novos inseridos (total: {}).",
-                    inseridos, insumoRepository.count());
+        if (inseridos > 0 || custosBackfill > 0) {
+            log.info("Catalogo de insumos: {} novos inseridos, {} custos preenchidos (total: {}).",
+                    inseridos, custosBackfill, insumoRepository.count());
         } else {
             log.info("Catalogo de insumos ja semeado (total: {}). Nada a fazer.",
                     insumoRepository.count());
