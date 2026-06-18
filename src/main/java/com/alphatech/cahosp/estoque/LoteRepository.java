@@ -38,6 +38,34 @@ public interface LoteRepository extends JpaRepository<Lote, UUID>, JpaSpecificat
                                   @Param("insumoId") UUID insumoId);
 
     /**
+     * Total de lotes com saldo no escopo (filtros opcionais de unidade/insumo) — denominador das
+     * Perdas por vencimento (RF-IND). RF-EST/RF-IND.
+     */
+    @Query("""
+            SELECT COUNT(l) FROM Lote l
+            WHERE l.quantidade > 0
+              AND (:unidadeId IS NULL OR l.unidade.id = :unidadeId)
+              AND (:insumoId IS NULL OR l.insumo.id = :insumoId)
+            """)
+    long contarComSaldo(@Param("unidadeId") UUID unidadeId,
+                        @Param("insumoId") UUID insumoId);
+
+    /**
+     * Lotes com saldo <strong>ja vencidos</strong> (validade anterior a {@code referencia}) no
+     * escopo — numerador (aproximacao de perda) das Perdas por vencimento (RF-IND). Estoque vencido
+     * ainda em maos = desperdicio.
+     */
+    @Query("""
+            SELECT COUNT(l) FROM Lote l
+            WHERE l.quantidade > 0 AND l.validade < :referencia
+              AND (:unidadeId IS NULL OR l.unidade.id = :unidadeId)
+              AND (:insumoId IS NULL OR l.insumo.id = :insumoId)
+            """)
+    long contarVencidosComSaldo(@Param("referencia") LocalDate referencia,
+                                @Param("unidadeId") UUID unidadeId,
+                                @Param("insumoId") UUID insumoId);
+
+    /**
      * Lotes com saldo acima de {@code quantidade} e validade ate a data, ordenados pela validade,
      * com insumo e unidade ja carregados (fetch join). Usado pelo motor de alertas de
      * vencimento (RF-ALE-02) — evita N+1 nas relacoes lazy ao varrer os lotes.

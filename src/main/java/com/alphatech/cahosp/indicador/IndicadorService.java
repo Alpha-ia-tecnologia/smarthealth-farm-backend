@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Leitura dos indicadores de desempenho (RF-IND): lista com derivacoes (progresso/atingiu/
@@ -19,18 +20,39 @@ public class IndicadorService {
 
     private final IndicadorMetaRepository indicadorRepository;
     private final CalculadoraIndicador calculadora;
+    private final CalculadoraIndicadorEscopo calculadoraEscopo;
 
     public IndicadorService(IndicadorMetaRepository indicadorRepository,
-                            CalculadoraIndicador calculadora) {
+                            CalculadoraIndicador calculadora,
+                            CalculadoraIndicadorEscopo calculadoraEscopo) {
         this.indicadorRepository = indicadorRepository;
         this.calculadora = calculadora;
+        this.calculadoraEscopo = calculadoraEscopo;
     }
 
-    /** Lista todos os indicadores com historico e derivacoes, na ordem de exibicao. RF-IND-01..06. */
+    /** Lista todos os indicadores (rede) com historico e derivacoes, na ordem. RF-IND-01..06. */
     public List<IndicadorResponse> listar() {
+        return listar(null, null);
+    }
+
+    /**
+     * Lista os indicadores recalculando o <strong>valor atual</strong> no escopo do filtro
+     * (unidade/insumo) para os que tem dado real; {@code baseline}/{@code meta}/historico seguem do
+     * edital. Sem filtro (ambos nulos) e identico a {@link #listar()}. RF-IND/RF-DASH.
+     */
+    public List<IndicadorResponse> listar(UUID unidadeId, UUID insumoId) {
         return indicadorRepository.buscarTodosComHistorico().stream()
-                .map(i -> IndicadorResponse.de(i, calculadora))
+                .map(i -> montar(i, unidadeId, insumoId))
                 .toList();
+    }
+
+    private IndicadorResponse montar(IndicadorMeta indicador, UUID unidadeId, UUID insumoId) {
+        return calculadoraEscopo.ajustar(indicador, unidadeId, insumoId)
+                .map(a -> IndicadorResponse.de(
+                        indicador, calculadora, a.atual(),
+                        a.numeradorAbsoluto() != null ? a.numeradorAbsoluto() : indicador.getNumeradorAbsoluto(),
+                        a.denominadorAbsoluto() != null ? a.denominadorAbsoluto() : indicador.getDenominadorAbsoluto()))
+                .orElseGet(() -> IndicadorResponse.de(indicador, calculadora));
     }
 
     /** Detalha um indicador pelo codigo de negocio (ex.: {@code ind-ruptura}). */
